@@ -1,0 +1,9 @@
+epoch,sequence_mode,window_length,window_size,feature_set,feature_dim,board_orientation,train_loss,train_acc,val_loss,val_acc,test_loss,test_acc
+1,padded,80,,style_trajectory,33,mover_relative_flipped,0.7095311611890793,0.465625,0.7092762947082519,0.5,0.6898918628692627,0.5
+2,padded,80,,style_trajectory,33,mover_relative_flipped,0.6880384057760238,0.54375,0.7092570900917053,0.5,0.6729775190353393,0.675
+3,padded,80,,style_trajectory,33,mover_relative_flipped,0.6769965261220932,0.6,0.7307066082954407,0.375,0.6639805555343627,0.6
+4,padded,80,,style_trajectory,33,mover_relative_flipped,0.6611858934164048,0.6375,0.7738123297691345,0.425,0.6490189671516419,0.65
+5,padded,80,,style_trajectory,33,mover_relative_flipped,0.6539975419640541,0.61875,0.7773382425308227,0.425,0.6481343388557435,0.65
+6,padded,80,,style_trajectory,33,mover_relative_flipped,0.6464062578976154,0.621875,0.8307478427886963,0.475,0.6607003569602966,0.625
+7,padded,80,,style_trajectory,33,mover_relative_flipped,0.6354360066354274,0.6375,0.8236824154853821,0.425,0.6510208010673523,0.675
+8,padded,80,,style_trajectory,33,mover_relative_flipped,0.6411323867738247,0.65,0.8215028285980225,0.425,0.6545325756072998,0.675
