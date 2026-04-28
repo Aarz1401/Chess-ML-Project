@@ -1,0 +1,4 @@
+model,preset,input_tensor,move_encoder_channels,residual_blocks,move_vector_dim,transformer_layers,transformer_heads,transformer_width,board_embedding_dim,feature_vector_dim,feature_embedding_dim,fusion_vector_dim,logit_dim,trainable_params
+Model 1,tiny,"(B, 80, 34, 8, 8)",16,1,64,1,2,128,128,33,32,160,2,181624
+Model 1,small,"(B, 80, 34, 8, 8)",32,2,128,2,4,256,256,33,64,320,2,1254350
+Model 1,paper,"(B, 80, 34, 8, 8)",64,6,320,12,8,1024,512,33,64,576,2,102302134

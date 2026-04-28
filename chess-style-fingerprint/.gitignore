@@ -1,0 +1,16 @@
+.venv/
+venv/
+env/
+__pycache__/
+*.pyc
+.DS_Store
+.pytest_cache/
+
+# Local data and large generated artifacts
+data/
+outputs/*.pt
+archive/old_outputs/
+stockfish_fishtest_raw/
+
+# Notebook checkpoints
+.ipynb_checkpoints/

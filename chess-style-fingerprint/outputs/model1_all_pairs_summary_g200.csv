@@ -1,0 +1,10 @@
+human_label,scale,games_per_class,expected_train_per_class,expected_val_per_class,expected_test_per_class,best_val_epoch,best_val_acc,test_at_best_val,best_test_epoch,best_test_acc,final_val_acc,final_test_acc,source
+tal,small,200,160,20,20,5,0.675,0.775,5,0.775,0.675,0.725,model1_pair_tal_stockfish_small_d2_m30_g200_e8.csv
+fischer,small,200,160,20,20,8,0.75,0.7,7,0.725,0.75,0.7,model1_pair_fischer_stockfish_small_d2_m30_g200_e8.csv
+capablanca,small,200,160,20,20,6,0.625,0.65,6,0.65,0.575,0.65,model1_pair_capablanca_stockfish_small_d2_m30_g200_e8.csv
+petrosian,small,200,160,20,20,5,0.625,0.625,2,0.65,0.6,0.65,model1_pair_petrosian_stockfish_small_d2_m30_g200_e8.csv
+botvinnik,small,200,160,20,20,8,0.75,0.6,8,0.6,0.75,0.6,model1_pair_botvinnik_stockfish_small_d2_m30_g200_e8.csv
+karpov,small,200,160,20,20,5,0.7,0.6,8,0.675,0.625,0.675,model1_pair_karpov_stockfish_small_d2_m30_g200_e8.csv
+kasparov,small,200,160,20,20,5,0.625,0.575,2,0.7,0.475,0.625,model1_pair_kasparov_stockfish_small_d2_m30_g200_e8.csv
+carlsen,small,200,160,20,20,6,0.6,0.55,8,0.675,0.5,0.675,model1_pair_carlsen_stockfish_small_d2_m30_g200_e8.csv
+anand,small,200,160,20,20,1,0.5,0.5,2,0.675,0.425,0.675,model1_pair_anand_stockfish_small_d2_m30_g200_e8.csv

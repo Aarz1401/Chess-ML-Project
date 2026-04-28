@@ -1,0 +1,64 @@
+human_label,classes,feature_set,majority_baseline,model_key,model,train_acc,val_acc,test_acc,test_loss
+anand,"anand,stockfish",style_trajectory,0.5,svm_rbf,RBF SVM,0.7875,0.525,0.675,0.6601699706203596
+anand,"anand,stockfish",style_trajectory,0.5,gbdt,Gradient Boosting,0.99375,0.45,0.65,0.6392736055916209
+anand,"anand,stockfish",style_trajectory,0.5,logreg,Logistic,0.715625,0.375,0.6,0.6800079142612724
+anand,"anand,stockfish",style_trajectory,0.5,svm_linear,Linear SVM,0.7125,0.35,0.6,0.6363434034315982
+anand,"anand,stockfish",style_trajectory,0.5,forest,Random Forest,0.821875,0.45,0.575,0.6638651265234075
+anand,"anand,stockfish",style_trajectory,0.5,mlp,MLP,1.0,0.425,0.525,2.644518817485494
+anand,"anand,stockfish",style_trajectory,0.5,knn,KNN,1.0,0.575,0.45,3.334511519813263
+botvinnik,"botvinnik,stockfish",style_trajectory,0.5,forest,Random Forest,0.85625,0.775,0.6,0.61159663070395
+botvinnik,"botvinnik,stockfish",style_trajectory,0.5,gbdt,Gradient Boosting,1.0,0.75,0.55,0.7811227265765976
+botvinnik,"botvinnik,stockfish",style_trajectory,0.5,logreg,Logistic,0.684375,0.625,0.475,0.7940045375138609
+botvinnik,"botvinnik,stockfish",style_trajectory,0.5,svm_linear,Linear SVM,0.68125,0.75,0.45,0.7111503673732127
+botvinnik,"botvinnik,stockfish",style_trajectory,0.5,knn,KNN,1.0,0.575,0.45,10.369373733133624
+botvinnik,"botvinnik,stockfish",style_trajectory,0.5,mlp,MLP,1.0,0.6,0.425,2.608479166620186
+botvinnik,"botvinnik,stockfish",style_trajectory,0.5,svm_rbf,RBF SVM,0.809375,0.525,0.3,0.7326317063812253
+capablanca,"capablanca,stockfish",style_trajectory,0.5,forest,Random Forest,0.840625,0.6,0.675,0.5974663266763216
+capablanca,"capablanca,stockfish",style_trajectory,0.5,svm_rbf,RBF SVM,0.778125,0.625,0.625,0.6747087433364454
+capablanca,"capablanca,stockfish",style_trajectory,0.5,svm_linear,Linear SVM,0.71875,0.55,0.6,0.6565867460990551
+capablanca,"capablanca,stockfish",style_trajectory,0.5,logreg,Logistic,0.709375,0.6,0.575,0.7009927596834183
+capablanca,"capablanca,stockfish",style_trajectory,0.5,gbdt,Gradient Boosting,1.0,0.5,0.55,0.7625638294548684
+capablanca,"capablanca,stockfish",style_trajectory,0.5,mlp,MLP,1.0,0.65,0.55,1.650168992297686
+capablanca,"capablanca,stockfish",style_trajectory,0.5,knn,KNN,1.0,0.65,0.45,3.3970929083443977
+carlsen,"carlsen,stockfish",style_trajectory,0.5,forest,Random Forest,0.809375,0.775,0.775,0.5634721252559141
+carlsen,"carlsen,stockfish",style_trajectory,0.5,gbdt,Gradient Boosting,0.996875,0.8,0.75,0.6538374991141813
+carlsen,"carlsen,stockfish",style_trajectory,0.5,mlp,MLP,1.0,0.45,0.6,1.778018763101875
+carlsen,"carlsen,stockfish",style_trajectory,0.5,svm_rbf,RBF SVM,0.784375,0.55,0.575,0.6637983746916004
+carlsen,"carlsen,stockfish",style_trajectory,0.5,knn,KNN,1.0,0.55,0.525,1.5823339049638598
+carlsen,"carlsen,stockfish",style_trajectory,0.5,logreg,Logistic,0.659375,0.425,0.475,0.7068792482293675
+carlsen,"carlsen,stockfish",style_trajectory,0.5,svm_linear,Linear SVM,0.690625,0.425,0.475,0.6891742855935787
+fischer,"fischer,stockfish",style_trajectory,0.5,forest,Random Forest,0.85,0.725,0.725,0.5392224109741518
+fischer,"fischer,stockfish",style_trajectory,0.5,gbdt,Gradient Boosting,1.0,0.75,0.725,0.7941013418190153
+fischer,"fischer,stockfish",style_trajectory,0.5,svm_linear,Linear SVM,0.7125,0.65,0.6,0.6741784686583067
+fischer,"fischer,stockfish",style_trajectory,0.5,svm_rbf,RBF SVM,0.7875,0.675,0.575,0.7093550724743791
+fischer,"fischer,stockfish",style_trajectory,0.5,mlp,MLP,1.0,0.55,0.55,2.334330752239727
+fischer,"fischer,stockfish",style_trajectory,0.5,knn,KNN,1.0,0.5,0.525,4.167995658052997
+fischer,"fischer,stockfish",style_trajectory,0.5,logreg,Logistic,0.703125,0.65,0.475,0.7286939900304589
+karpov,"karpov,stockfish",style_trajectory,0.5,logreg,Logistic,0.74375,0.525,0.7,0.6374764862185703
+karpov,"karpov,stockfish",style_trajectory,0.5,svm_linear,Linear SVM,0.75625,0.575,0.7,0.5861661375740763
+karpov,"karpov,stockfish",style_trajectory,0.5,forest,Random Forest,0.846875,0.575,0.7,0.6116631139906261
+karpov,"karpov,stockfish",style_trajectory,0.5,svm_rbf,RBF SVM,0.85,0.625,0.675,0.5992891869258422
+karpov,"karpov,stockfish",style_trajectory,0.5,gbdt,Gradient Boosting,1.0,0.55,0.675,0.6669531066725757
+karpov,"karpov,stockfish",style_trajectory,0.5,mlp,MLP,1.0,0.6,0.575,1.5561339259874756
+karpov,"karpov,stockfish",style_trajectory,0.5,knn,KNN,1.0,0.7,0.55,2.36849730411375
+kasparov,"kasparov,stockfish",style_trajectory,0.5,gbdt,Gradient Boosting,1.0,0.6,0.65,0.7862399396831237
+kasparov,"kasparov,stockfish",style_trajectory,0.5,mlp,MLP,1.0,0.4,0.65,1.8789693815388333
+kasparov,"kasparov,stockfish",style_trajectory,0.5,forest,Random Forest,0.85625,0.575,0.625,0.6655439945588295
+kasparov,"kasparov,stockfish",style_trajectory,0.5,knn,KNN,1.0,0.375,0.625,5.846291736298644
+kasparov,"kasparov,stockfish",style_trajectory,0.5,svm_rbf,RBF SVM,0.85,0.525,0.575,0.6955651996880278
+kasparov,"kasparov,stockfish",style_trajectory,0.5,logreg,Logistic,0.76875,0.475,0.55,0.6927796653607422
+kasparov,"kasparov,stockfish",style_trajectory,0.5,svm_linear,Linear SVM,0.759375,0.45,0.55,0.6733918288700769
+petrosian,"petrosian,stockfish",style_trajectory,0.5,svm_rbf,RBF SVM,0.834375,0.6,0.7,0.5962325124071622
+petrosian,"petrosian,stockfish",style_trajectory,0.5,forest,Random Forest,0.80625,0.75,0.7,0.5762568823884371
+petrosian,"petrosian,stockfish",style_trajectory,0.5,gbdt,Gradient Boosting,1.0,0.65,0.7,0.7185138759305255
+petrosian,"petrosian,stockfish",style_trajectory,0.5,logreg,Logistic,0.76875,0.625,0.675,0.5944473102974772
+petrosian,"petrosian,stockfish",style_trajectory,0.5,svm_linear,Linear SVM,0.78125,0.625,0.675,0.5799580039495245
+petrosian,"petrosian,stockfish",style_trajectory,0.5,knn,KNN,1.0,0.45,0.6,1.473075021714495
+petrosian,"petrosian,stockfish",style_trajectory,0.5,mlp,MLP,1.0,0.625,0.55,1.852325558521922
+tal,"tal,stockfish",style_trajectory,0.5,gbdt,Gradient Boosting,1.0,0.75,0.8,0.4877960156872932
+tal,"tal,stockfish",style_trajectory,0.5,logreg,Logistic,0.69375,0.55,0.775,0.5729288994026772
+tal,"tal,stockfish",style_trajectory,0.5,forest,Random Forest,0.834375,0.75,0.775,0.4899138021457352
+tal,"tal,stockfish",style_trajectory,0.5,svm_linear,Linear SVM,0.709375,0.525,0.7,0.5813806688970075
+tal,"tal,stockfish",style_trajectory,0.5,svm_rbf,RBF SVM,0.784375,0.6,0.675,0.6266569907003745
+tal,"tal,stockfish",style_trajectory,0.5,mlp,MLP,1.0,0.525,0.65,1.79367059927751
+tal,"tal,stockfish",style_trajectory,0.5,knn,KNN,1.0,0.6,0.45,5.956515815031504
