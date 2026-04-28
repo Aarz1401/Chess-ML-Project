@@ -1,4 +1,0 @@
-model,classifier,input_vector_dim,output_dim,parameter_count,count_note
-Model 2,Linear SVM,33,2,34,Binary pairwise case: one linear separator has d weights + 1 bias.
-Model 2,RBF SVM,33,2,data-dependent,Depends on number of support vectors (not fixed before fitting).
-Model 2,Random Forest,33,2,data-dependent,"Uses 300 trees, max_depth=4 in this project; exact node counts depend on fitted splits."

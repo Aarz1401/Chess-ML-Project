@@ -1,7 +1,0 @@
-torch>=2.0.0
-python-chess>=1.999
-numpy
-huggingface_hub
-scikit-learn
-pandas
-matplotlib
