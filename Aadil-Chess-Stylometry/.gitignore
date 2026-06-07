@@ -2,4 +2,9 @@
 .matplotlib/
 logs/
 results/
+deliverables/
+__pycache__/
+*.pyc
 *.pt
+CHESS_COM_EMAIL_DRAFT.md
+POC_REPORT.md

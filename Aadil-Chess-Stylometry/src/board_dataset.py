@@ -1,9 +1,8 @@
-"""Board-tensor dataset for the compact multiclass stylometry classifier.
+"""Board-plane scaffolding for the chess stylometry dataset.
 
-This module turns raw PGN games into one neural example per game. The important
-design choice is that we keep both the target player's moves and the opponent's
-moves in chronological order, then add role planes so the model can learn the
-target player's decisions in context.
+This file is intentionally thin while we decide the representation. Keep the
+plane builders explicit and small; build the sequence/dataset pipeline only
+after the per-move channels make chess sense.
 """
 
 from __future__ import annotations
@@ -16,7 +15,6 @@ from pathlib import Path
 from typing import Iterable
 
 import chess
-import chess.engine
 import chess.pgn
 import torch
 from torch.utils.data import Dataset
@@ -43,10 +41,202 @@ PIECE_TO_RELATIVE_CHANNEL = {
     chess.KING: 5,
 }
 
-BASE_CHANNELS = 34
-CONTEXT_CHANNELS = 4
-STOCKFISH_CHANNELS = 7
-INPUT_CHANNELS = BASE_CHANNELS + CONTEXT_CHANNELS + STOCKFISH_CHANNELS
+PIECE_PLANE_NAMES = [
+    "target_P",
+    "target_N",
+    "target_B",
+    "target_R",
+    "target_Q",
+    "target_K",
+    "opponent_P",
+    "opponent_N",
+    "opponent_B",
+    "opponent_R",
+    "opponent_Q",
+    "opponent_K",
+]
+MOVE_PLANE_NAMES = ["move_from", "move_to"]
+LEGAL_PLANE_NAMES = [
+    "before_legal_dest_P",
+    "before_legal_dest_N",
+    "before_legal_dest_B",
+    "before_legal_dest_R",
+    "before_legal_dest_Q",
+    "before_legal_dest_K",
+]
+ATTACK_PLANE_NAMES = [
+    "target_attack_P",
+    "target_attack_N",
+    "target_attack_B",
+    "target_attack_R",
+    "target_attack_Q",
+    "target_attack_K",
+    "opponent_attack_P",
+    "opponent_attack_N",
+    "opponent_attack_B",
+    "opponent_attack_R",
+    "opponent_attack_Q",
+    "opponent_attack_K",
+]
+AFTER_ATTACK_PLANE_NAMES = [
+    "after_target_attacks",
+    "after_opponent_attacks",
+    "new_target_attacks",
+    "new_opponent_attacks",
+]
+CAPTURE_THREAT_PLANE_NAMES = [
+    "target_capture_targets",
+    "opponent_capture_targets",
+    "target_threatens_pieces",
+    "opponent_threatens_pieces",
+    "new_target_threats",
+    "new_opponent_threats",
+]
+KING_ZONE_PLANE_NAMES = [
+    "target_king_zone",
+    "opponent_king_zone",
+    "target_pressure_opponent_king",
+    "opponent_pressure_target_king",
+]
+EFFECT_PLANE_NAMES = [
+    "new_piece_attacks",
+    "removed_piece_attacks",
+    "new_piece_defenses",
+    "removed_piece_defenses",
+]
+ROLE_PLANE_NAMES = ["target_move", "opponent_move"]
+PLANE_NAMES = (
+    PIECE_PLANE_NAMES
+    + MOVE_PLANE_NAMES
+    + LEGAL_PLANE_NAMES
+    + ATTACK_PLANE_NAMES
+    + AFTER_ATTACK_PLANE_NAMES
+    + CAPTURE_THREAT_PLANE_NAMES
+    + KING_ZONE_PLANE_NAMES
+    + EFFECT_PLANE_NAMES
+    + ROLE_PLANE_NAMES
+)
+DERIVED_GAME_PLANE_NAMES = [
+    "game_target_from_P",
+    "game_target_from_N",
+    "game_target_from_B",
+    "game_target_from_R",
+    "game_target_from_Q",
+    "game_target_from_K",
+    "game_target_to_P",
+    "game_target_to_N",
+    "game_target_to_B",
+    "game_target_to_R",
+    "game_target_to_Q",
+    "game_target_to_K",
+    "game_opponent_from",
+    "game_opponent_to",
+    "game_target_legal_dest",
+    "game_opponent_legal_dest",
+    "game_target_after_attacks",
+    "game_target_new_attacks",
+    "game_opponent_new_attacks",
+    "game_target_capture_targets",
+    "game_target_threatens_pieces",
+    "game_target_new_threats",
+    "game_target_king_pressure",
+    "game_opponent_king_pressure",
+]
+DIRECT_GAME_PLANE_NAMES = [
+    "game_direct_target_occupancy_P",
+    "game_direct_target_occupancy_N",
+    "game_direct_target_occupancy_B",
+    "game_direct_target_occupancy_R",
+    "game_direct_target_occupancy_Q",
+    "game_direct_target_occupancy_K",
+    "game_direct_target_capture_to",
+    "game_direct_target_check_to",
+]
+GAME_PLANE_NAMES = DERIVED_GAME_PLANE_NAMES + DIRECT_GAME_PLANE_NAMES
+FULL_INPUT_PLANE_NAMES = PLANE_NAMES + GAME_PLANE_NAMES
+
+PIECE_CHANNELS = 12
+MOVE_CHANNELS = 2
+LEGAL_CHANNELS = 6
+ATTACK_CHANNELS = 12
+AFTER_ATTACK_CHANNELS = 4
+CAPTURE_THREAT_CHANNELS = 6
+KING_ZONE_CHANNELS = 4
+EFFECT_CHANNELS = 4
+ROLE_CHANNELS = 2
+BASE_CHANNELS = (
+    PIECE_CHANNELS
+    + MOVE_CHANNELS
+    + LEGAL_CHANNELS
+    + ATTACK_CHANNELS
+    + AFTER_ATTACK_CHANNELS
+    + CAPTURE_THREAT_CHANNELS
+    + KING_ZONE_CHANNELS
+    + EFFECT_CHANNELS
+    + ROLE_CHANNELS
+)
+CONTEXT_CHANNELS = 0
+STOCKFISH_CHANNELS = 0
+MOVE_INPUT_CHANNELS = BASE_CHANNELS + CONTEXT_CHANNELS + STOCKFISH_CHANNELS
+DERIVED_GAME_CHANNELS = len(DERIVED_GAME_PLANE_NAMES)
+DIRECT_GAME_CHANNELS = len(DIRECT_GAME_PLANE_NAMES)
+GAME_CHANNELS = len(GAME_PLANE_NAMES)
+GAME_CHANNEL_START = MOVE_INPUT_CHANNELS
+INPUT_CHANNELS = MOVE_INPUT_CHANNELS + GAME_CHANNELS
+
+TARGET_WEIGHT = 1.0
+OPPONENT_WEIGHT = 0.5
+GAME_TARGET_WEIGHT = 1.0
+GAME_OPPONENT_WEIGHT = 0.5
+
+TARGET_PIECE_OFFSET = 0
+OPPONENT_PIECE_OFFSET = 6
+MOVE_FROM_CHANNEL = PIECE_CHANNELS
+MOVE_TO_CHANNEL = PIECE_CHANNELS + 1
+LEGAL_CHANNEL_START = PIECE_CHANNELS + MOVE_CHANNELS
+ATTACK_CHANNEL_START = LEGAL_CHANNEL_START + LEGAL_CHANNELS
+AFTER_ATTACK_CHANNEL_START = ATTACK_CHANNEL_START + ATTACK_CHANNELS
+AFTER_TARGET_ATTACKS_CHANNEL = AFTER_ATTACK_CHANNEL_START
+AFTER_OPPONENT_ATTACKS_CHANNEL = AFTER_ATTACK_CHANNEL_START + 1
+NEW_TARGET_ATTACKS_CHANNEL = AFTER_ATTACK_CHANNEL_START + 2
+NEW_OPPONENT_ATTACKS_CHANNEL = AFTER_ATTACK_CHANNEL_START + 3
+CAPTURE_THREAT_CHANNEL_START = AFTER_ATTACK_CHANNEL_START + AFTER_ATTACK_CHANNELS
+TARGET_CAPTURE_TARGETS_CHANNEL = CAPTURE_THREAT_CHANNEL_START
+OPPONENT_CAPTURE_TARGETS_CHANNEL = CAPTURE_THREAT_CHANNEL_START + 1
+TARGET_THREATENS_PIECES_CHANNEL = CAPTURE_THREAT_CHANNEL_START + 2
+OPPONENT_THREATENS_PIECES_CHANNEL = CAPTURE_THREAT_CHANNEL_START + 3
+NEW_TARGET_THREATS_CHANNEL = CAPTURE_THREAT_CHANNEL_START + 4
+NEW_OPPONENT_THREATS_CHANNEL = CAPTURE_THREAT_CHANNEL_START + 5
+KING_ZONE_CHANNEL_START = CAPTURE_THREAT_CHANNEL_START + CAPTURE_THREAT_CHANNELS
+TARGET_KING_ZONE_CHANNEL = KING_ZONE_CHANNEL_START
+OPPONENT_KING_ZONE_CHANNEL = KING_ZONE_CHANNEL_START + 1
+TARGET_PRESSURE_OPPONENT_KING_CHANNEL = KING_ZONE_CHANNEL_START + 2
+OPPONENT_PRESSURE_TARGET_KING_CHANNEL = KING_ZONE_CHANNEL_START + 3
+EFFECT_CHANNEL_START = KING_ZONE_CHANNEL_START + KING_ZONE_CHANNELS
+NEW_ATTACKS_CHANNEL = EFFECT_CHANNEL_START
+REMOVED_ATTACKS_CHANNEL = EFFECT_CHANNEL_START + 1
+NEW_DEFENSES_CHANNEL = EFFECT_CHANNEL_START + 2
+REMOVED_DEFENSES_CHANNEL = EFFECT_CHANNEL_START + 3
+TARGET_MOVE_CHANNEL = EFFECT_CHANNEL_START + EFFECT_CHANNELS
+OPPONENT_MOVE_CHANNEL = TARGET_MOVE_CHANNEL + 1
+GAME_TARGET_FROM_START = 0
+GAME_TARGET_TO_START = GAME_TARGET_FROM_START + 6
+GAME_OPPONENT_FROM_CHANNEL = GAME_TARGET_TO_START + 6
+GAME_OPPONENT_TO_CHANNEL = GAME_OPPONENT_FROM_CHANNEL + 1
+GAME_TARGET_LEGAL_DEST_CHANNEL = GAME_OPPONENT_TO_CHANNEL + 1
+GAME_OPPONENT_LEGAL_DEST_CHANNEL = GAME_TARGET_LEGAL_DEST_CHANNEL + 1
+GAME_TARGET_AFTER_ATTACKS_CHANNEL = GAME_OPPONENT_LEGAL_DEST_CHANNEL + 1
+GAME_TARGET_NEW_ATTACKS_CHANNEL = GAME_TARGET_AFTER_ATTACKS_CHANNEL + 1
+GAME_OPPONENT_NEW_ATTACKS_CHANNEL = GAME_TARGET_NEW_ATTACKS_CHANNEL + 1
+GAME_TARGET_CAPTURE_TARGETS_CHANNEL = GAME_OPPONENT_NEW_ATTACKS_CHANNEL + 1
+GAME_TARGET_THREATENS_PIECES_CHANNEL = GAME_TARGET_CAPTURE_TARGETS_CHANNEL + 1
+GAME_TARGET_NEW_THREATS_CHANNEL = GAME_TARGET_THREATENS_PIECES_CHANNEL + 1
+GAME_TARGET_KING_PRESSURE_CHANNEL = GAME_TARGET_NEW_THREATS_CHANNEL + 1
+GAME_OPPONENT_KING_PRESSURE_CHANNEL = GAME_TARGET_KING_PRESSURE_CHANNEL + 1
+DIRECT_GAME_CHANNEL_START = DERIVED_GAME_CHANNELS
+GAME_DIRECT_TARGET_OCCUPANCY_START = DIRECT_GAME_CHANNEL_START
+GAME_DIRECT_TARGET_CAPTURE_TO_CHANNEL = GAME_DIRECT_TARGET_OCCUPANCY_START + 6
+GAME_DIRECT_TARGET_CHECK_TO_CHANNEL = GAME_DIRECT_TARGET_CAPTURE_TO_CHANNEL + 1
 
 
 @dataclass(frozen=True)
@@ -63,16 +253,18 @@ class GameRecord:
 
 @dataclass(frozen=True)
 class TensorConfig:
-    """Settings that control how one game becomes one tensor sequence."""
+    """Settings that will control game-to-tensor conversion later."""
 
     sequence_length: int = 80
-    stockfish_depth: int = 2
-    multipv: int = 3
+    skip_plies: int = 0
+    target_moves_only: bool = False
+    stockfish_depth: int = 0
+    multipv: int = 0
     board_flip: bool = True
 
 
 class ChessStyleDataset(Dataset):
-    """Minimal PyTorch dataset for precomputed game tensors."""
+    """Minimal PyTorch dataset wrapper for already-built tensor samples."""
 
     def __init__(self, samples: list[tuple[torch.Tensor, torch.Tensor, int]]) -> None:
         self.samples = samples
@@ -223,198 +415,571 @@ def square_to_coords(square: chess.Square, flip: bool) -> tuple[int, int]:
     return 7 - rank_idx, file_idx
 
 
-def piece_planes(board: chess.Board, target_color: bool, board_flip: bool) -> torch.Tensor:
-    """Encode pieces as target-relative planes.
+def piece_channel(piece: chess.Piece, target_color: bool) -> int:
+    """Return the target-relative channel index for one piece."""
 
-    The first six planes are the target player's pieces and the next six are
-    the opponent's pieces. If the target is Black, the board is rotated so the
-    target side is still shown from the bottom.
+    base_channel = PIECE_TO_RELATIVE_CHANNEL[piece.piece_type]
+    offset = TARGET_PIECE_OFFSET if piece.color == target_color else OPPONENT_PIECE_OFFSET
+    return offset + base_channel
+
+
+def side_weight(color: bool, target_color: bool) -> float:
+    """Return the configured weight for target-owned vs opponent-owned data."""
+
+    return TARGET_WEIGHT if color == target_color else OPPONENT_WEIGHT
+
+
+def piece_planes(board: chess.Board, target_color: bool, board_flip: bool) -> torch.Tensor:
+    """Encode piece locations in target-relative channels.
+
+    Channels are defined by PIECE_PLANE_NAMES:
+    target P/N/B/R/Q/K, then opponent P/N/B/R/Q/K. Target pieces are marked
+    with 1.0 and opponent pieces are marked with 0.5.
     """
 
-    planes = torch.zeros((12, 8, 8), dtype=torch.float32)
+    planes = torch.zeros((PIECE_CHANNELS, 8, 8), dtype=torch.float32)
     flip = board_flip and target_color == chess.BLACK
 
     for square, piece in board.piece_map().items():
-        base_channel = PIECE_TO_RELATIVE_CHANNEL[piece.piece_type]
-        channel = base_channel if piece.color == target_color else base_channel + 6
+        channel = piece_channel(piece, target_color)
+        value = side_weight(piece.color, target_color)
         row, col = square_to_coords(square, flip)
-        planes[channel, row, col] = 1.0
+        planes[channel, row, col] = value
 
     return planes
 
 
-def metadata_planes(board: chess.Board, target_color: bool) -> torch.Tensor:
-    """Create global board-state planes that match the old 34-channel setup."""
+def legal_destination_planes(board: chess.Board, target_color: bool, board_flip: bool) -> torch.Tensor:
+    """Encode legal destination squares for the side to move by piece type."""
 
-    planes = torch.zeros((10, 8, 8), dtype=torch.float32)
-    opponent = not target_color
+    planes = torch.zeros((LEGAL_CHANNELS, 8, 8), dtype=torch.float32)
+    flip = board_flip and target_color == chess.BLACK
+    value = side_weight(board.turn, target_color)
 
-    # Repeating scalar metadata across 8x8 lets the CNN consume these facts
-    # without a separate non-board feature branch.
-    planes[0].fill_(float(board.is_repetition(2)))
-    planes[1].fill_(float(board.is_repetition(3)))
-    planes[2].fill_(float(board.has_kingside_castling_rights(target_color)))
-    planes[3].fill_(float(board.has_queenside_castling_rights(target_color)))
-    planes[4].fill_(float(board.has_kingside_castling_rights(opponent)))
-    planes[5].fill_(float(board.has_queenside_castling_rights(opponent)))
-    planes[6].fill_(float(target_color == chess.WHITE))
-    planes[7].fill_(min(board.halfmove_clock / 100.0, 1.0))
-    planes[8].fill_(min(board.fullmove_number / 200.0, 1.0))
-    planes[9, 0, :] = 1.0
-    planes[9, 7, :] = 1.0
-    planes[9, :, 0] = 1.0
-    planes[9, :, 7] = 1.0
+    for legal_move in board.legal_moves:
+        piece = board.piece_at(legal_move.from_square)
+        if piece is None:
+            continue
+
+        channel = PIECE_TO_RELATIVE_CHANNEL[piece.piece_type]
+        row, col = square_to_coords(legal_move.to_square, flip)
+        planes[channel, row, col] = max(float(planes[channel, row, col]), value)
+
     return planes
 
 
-def base_move_tensor(before: chess.Board, after: chess.Board, target_color: bool, board_flip: bool) -> torch.Tensor:
-    """Build the 34 paper-style channels for one before/after move pair."""
+def attack_control_planes(board: chess.Board, target_color: bool, board_flip: bool) -> torch.Tensor:
+    """Encode attacked squares by target/opponent and piece type."""
 
-    return torch.cat(
-        [
-            piece_planes(before, target_color=target_color, board_flip=board_flip),
-            piece_planes(after, target_color=target_color, board_flip=board_flip),
-            metadata_planes(before, target_color=target_color),
-        ],
-        dim=0,
-    )
+    planes = torch.zeros((ATTACK_CHANNELS, 8, 8), dtype=torch.float32)
+    flip = board_flip and target_color == chess.BLACK
 
+    for square, piece in board.piece_map().items():
+        channel = piece_channel(piece, target_color)
+        value = side_weight(piece.color, target_color)
+        for attacked_square in board.attacks(square):
+            row, col = square_to_coords(attacked_square, flip)
+            planes[channel, row, col] += value
 
-def score_to_cp(score: chess.engine.PovScore, perspective: bool) -> float:
-    """Convert a Stockfish score into centipawns from one side's perspective."""
-
-    cp = score.pov(perspective).score(mate_score=100000)
-    return float(cp if cp is not None else 0.0)
-
-
-def normalize_eval_cp(value: float, scale: float = 1000.0) -> float:
-    """Squash centipawn values to a stable range for neural input planes."""
-
-    return max(min(value / scale, 10.0), -10.0)
-
-
-def eval_cache_key(board: chess.Board, target_color: bool, multipv: int) -> tuple[str, bool, int]:
-    """Key Stockfish results by position, perspective, and requested multipv."""
-
-    return board.fen(), target_color, multipv
-
-
-def analyse_position(
-    board: chess.Board,
-    target_color: bool,
-    engine: chess.engine.SimpleEngine,
-    limit: chess.engine.Limit,
-    multipv: int,
-    cache: dict[tuple[str, bool, int], tuple[float, list[chess.Move]]],
-) -> tuple[float, list[chess.Move]]:
-    """Return eval and top engine moves for one position, using a small cache."""
-
-    key = eval_cache_key(board, target_color, multipv)
-    if key in cache:
-        return cache[key]
-
-    try:
-        info = engine.analyse(board, limit, multipv=multipv)
-        if isinstance(info, dict):
-            info = [info]
-
-        eval_cp = score_to_cp(info[0]["score"], target_color) if info else 0.0
-        top_moves = []
-        for item in info[:multipv]:
-            pv = item.get("pv") or []
-            if pv:
-                top_moves.append(pv[0])
-    except Exception:
-        eval_cp = 0.0
-        top_moves = []
-
-    cache[key] = (eval_cp, top_moves)
-    return cache[key]
-
-
-def context_planes(mover: bool, target_color: bool) -> torch.Tensor:
-    """Encode whose move this ply is as board-shaped scalar planes."""
-
-    planes = torch.zeros((CONTEXT_CHANNELS, 8, 8), dtype=torch.float32)
-    is_target_move = mover == target_color
-    planes[0].fill_(float(is_target_move))
-    planes[1].fill_(float(not is_target_move))
-    planes[2].fill_(float(mover == chess.WHITE))
-    planes[3].fill_(float(target_color == chess.WHITE))
     return planes
 
 
-def stockfish_planes(
-    before: chess.Board,
-    after: chess.Board,
-    move: chess.Move,
-    target_color: bool,
-    engine: chess.engine.SimpleEngine,
-    limit: chess.engine.Limit,
-    multipv: int,
-    board_flip: bool,
-    cache: dict[tuple[str, bool, int], tuple[float, list[chess.Move]]],
-) -> torch.Tensor:
-    """Map Stockfish evaluation into extra 8x8 channels.
+def side_attack_counts(board: chess.Board, color: bool, board_flip: bool) -> torch.Tensor:
+    """Return one aggregate attack-count map for a single side."""
 
-    Three scalar planes carry before/after/delta evaluation. One heatmap marks
-    the played move's destination with eval delta, and three heatmaps mark
-    Stockfish's top-1, top-2, and top-3 destination squares.
+    plane = torch.zeros((8, 8), dtype=torch.float32)
+
+    for square, piece in board.piece_map().items():
+        if piece.color != color:
+            continue
+
+        for attacked_square in board.attacks(square):
+            row, col = square_to_coords(attacked_square, board_flip)
+            plane[row, col] += 1.0
+
+    return plane
+
+
+def weighted_side_attack_counts(board: chess.Board, color: bool, target_color: bool, board_flip: bool) -> torch.Tensor:
+    """Return attack counts scaled by target/opponent ownership."""
+
+    return side_attack_counts(board, color, board_flip) * side_weight(color, target_color)
+
+
+def after_attack_planes(before: chess.Board, after: chess.Board, target_color: bool, board_flip: bool) -> torch.Tensor:
+    """Encode aggregate after-position attacks and newly created pressure.
+
+    The delta channels keep only non-negative increases so these remain
+    readable heatmaps instead of signed tensors.
     """
 
-    planes = torch.zeros((STOCKFISH_CHANNELS, 8, 8), dtype=torch.float32)
-    before_eval, top_moves = analyse_position(before, target_color, engine, limit, multipv, cache)
-    after_eval, _ = analyse_position(after, target_color, engine, limit, multipv, cache)
-    eval_delta = after_eval - before_eval
-
-    planes[0].fill_(normalize_eval_cp(before_eval))
-    planes[1].fill_(normalize_eval_cp(after_eval))
-    planes[2].fill_(normalize_eval_cp(eval_delta, scale=300.0))
-
+    planes = torch.zeros((AFTER_ATTACK_CHANNELS, 8, 8), dtype=torch.float32)
     flip = board_flip and target_color == chess.BLACK
-    row, col = square_to_coords(move.to_square, flip)
-    planes[3, row, col] = normalize_eval_cp(eval_delta, scale=300.0)
+    opponent = not target_color
 
-    for rank, top_move in enumerate(top_moves[:3]):
-        row, col = square_to_coords(top_move.to_square, flip)
-        planes[4 + rank, row, col] = 1.0
+    before_target = side_attack_counts(before, target_color, flip)
+    after_target = side_attack_counts(after, target_color, flip)
+    before_opponent = side_attack_counts(before, opponent, flip)
+    after_opponent = side_attack_counts(after, opponent, flip)
+
+    planes[0] = after_target * TARGET_WEIGHT
+    planes[1] = after_opponent * OPPONENT_WEIGHT
+    planes[2] = torch.clamp(after_target - before_target, min=0.0) * TARGET_WEIGHT
+    planes[3] = torch.clamp(after_opponent - before_opponent, min=0.0) * OPPONENT_WEIGHT
 
     return planes
 
 
-def game_to_tensor_sample(
+def side_defense_counts(board: chess.Board, color: bool, board_flip: bool) -> torch.Tensor:
+    """Return counts of defended own-piece squares for a single side."""
+
+    plane = torch.zeros((8, 8), dtype=torch.float32)
+
+    for square, piece in board.piece_map().items():
+        if piece.color != color:
+            continue
+
+        row, col = square_to_coords(square, board_flip)
+        plane[row, col] = float(len(board.attackers(color, square)))
+
+    return plane
+
+
+def capture_target_plane(board: chess.Board, color: bool, target_color: bool, board_flip: bool) -> torch.Tensor:
+    """Return legal capture destination squares for one side in this position."""
+
+    plane = torch.zeros((8, 8), dtype=torch.float32)
+    value = side_weight(color, target_color)
+    side_board = board.copy(stack=False)
+    side_board.turn = color
+
+    for legal_move in side_board.legal_moves:
+        if not side_board.is_capture(legal_move):
+            continue
+
+        row, col = square_to_coords(legal_move.to_square, board_flip)
+        plane[row, col] = max(float(plane[row, col]), value)
+
+    return plane
+
+
+def threatened_piece_plane(board: chess.Board, attacker_color: bool, target_color: bool, board_flip: bool) -> torch.Tensor:
+    """Return enemy occupied squares attacked by one side."""
+
+    plane = torch.zeros((8, 8), dtype=torch.float32)
+    value = side_weight(attacker_color, target_color)
+
+    for square, piece in board.piece_map().items():
+        if piece.color == attacker_color:
+            continue
+        if not board.is_attacked_by(attacker_color, square):
+            continue
+
+        row, col = square_to_coords(square, board_flip)
+        plane[row, col] = value
+
+    return plane
+
+
+def capture_threat_planes(before: chess.Board, after: chess.Board, target_color: bool, board_flip: bool) -> torch.Tensor:
+    """Encode legal captures, current threats, and newly created threats."""
+
+    planes = torch.zeros((CAPTURE_THREAT_CHANNELS, 8, 8), dtype=torch.float32)
+    flip = board_flip and target_color == chess.BLACK
+    opponent = not target_color
+
+    before_target_threats = threatened_piece_plane(before, target_color, target_color, flip)
+    before_opponent_threats = threatened_piece_plane(before, opponent, target_color, flip)
+    after_target_threats = threatened_piece_plane(after, target_color, target_color, flip)
+    after_opponent_threats = threatened_piece_plane(after, opponent, target_color, flip)
+
+    planes[0] = capture_target_plane(before, target_color, target_color, flip)
+    planes[1] = capture_target_plane(before, opponent, target_color, flip)
+    planes[2] = before_target_threats
+    planes[3] = before_opponent_threats
+    planes[4] = torch.clamp(after_target_threats - before_target_threats, min=0.0)
+    planes[5] = torch.clamp(after_opponent_threats - before_opponent_threats, min=0.0)
+
+    return planes
+
+
+def king_zone_mask(board: chess.Board, color: bool, target_color: bool, board_flip: bool) -> torch.Tensor:
+    """Return the king square plus adjacent squares for one side."""
+
+    plane = torch.zeros((8, 8), dtype=torch.float32)
+    king_square = board.king(color)
+    if king_square is None:
+        return plane
+
+    value = side_weight(color, target_color)
+    zone_squares = set(board.attacks(king_square))
+    zone_squares.add(king_square)
+    for square in zone_squares:
+        row, col = square_to_coords(square, board_flip)
+        plane[row, col] = value
+
+    return plane
+
+
+def king_zone_pressure_plane(
+    board: chess.Board,
+    attacker_color: bool,
+    king_color: bool,
+    target_color: bool,
+    board_flip: bool,
+) -> torch.Tensor:
+    """Return attacking pressure inside a king zone."""
+
+    king_square = board.king(king_color)
+    if king_square is None:
+        return torch.zeros((8, 8), dtype=torch.float32)
+
+    zone = torch.zeros((8, 8), dtype=torch.float32)
+    for square in set(board.attacks(king_square)) | {king_square}:
+        row, col = square_to_coords(square, board_flip)
+        zone[row, col] = 1.0
+
+    attacks = weighted_side_attack_counts(board, attacker_color, target_color, board_flip)
+    return attacks * zone
+
+
+def king_zone_planes(before: chess.Board, target_color: bool, board_flip: bool) -> torch.Tensor:
+    """Encode king zones and pressure near each king in the before position."""
+
+    planes = torch.zeros((KING_ZONE_CHANNELS, 8, 8), dtype=torch.float32)
+    flip = board_flip and target_color == chess.BLACK
+    opponent = not target_color
+
+    planes[0] = king_zone_mask(before, target_color, target_color, flip)
+    planes[1] = king_zone_mask(before, opponent, target_color, flip)
+    planes[2] = king_zone_pressure_plane(before, target_color, opponent, target_color, flip)
+    planes[3] = king_zone_pressure_plane(before, opponent, target_color, target_color, flip)
+
+    return planes
+
+
+def piece_presence_mask(board: chess.Board, color: bool, board_flip: bool) -> torch.Tensor:
+    """Return a mask of occupied squares for one side."""
+
+    plane = torch.zeros((8, 8), dtype=torch.float32)
+
+    for square, piece in board.piece_map().items():
+        if piece.color != color:
+            continue
+
+        row, col = square_to_coords(square, board_flip)
+        plane[row, col] = 1.0
+
+    return plane
+
+
+def move_effect_planes(before: chess.Board, after: chess.Board, target_color: bool, board_flip: bool) -> torch.Tensor:
+    """Encode how the move changed attacks/defenses on occupied pieces.
+
+    Attack effects are restricted to opponent pieces. Defense effects are
+    restricted to own pieces. Removed effects only count pieces still present
+    after the move, so moving away from a square does not mark that now-empty
+    square as a lost defense.
+    """
+
+    planes = torch.zeros((EFFECT_CHANNELS, 8, 8), dtype=torch.float32)
+    mover = before.turn
+    flip = board_flip and target_color == chess.BLACK
+    value = side_weight(mover, target_color)
+
+    opponent = not mover
+    before_opponent = piece_presence_mask(before, opponent, flip)
+    after_opponent = piece_presence_mask(after, opponent, flip)
+    stable_opponent = before_opponent * after_opponent
+
+    before_attacks = side_attack_counts(before, mover, flip) * stable_opponent
+    after_attacks = side_attack_counts(after, mover, flip) * after_opponent
+    attack_delta = after_attacks - before_attacks
+    planes[0] = torch.clamp(attack_delta, min=0.0) * value
+    planes[1] = torch.clamp(-attack_delta, min=0.0) * value
+
+    before_own = piece_presence_mask(before, mover, flip)
+    after_own = piece_presence_mask(after, mover, flip)
+    stable_own = before_own * after_own
+
+    before_defenses = side_defense_counts(before, mover, flip) * stable_own
+    after_defenses = side_defense_counts(after, mover, flip) * after_own
+    defense_delta = after_defenses - before_defenses
+    planes[2] = torch.clamp(defense_delta, min=0.0) * value
+    planes[3] = torch.clamp(-defense_delta, min=0.0) * value
+
+    return planes
+
+
+def move_planes(before: chess.Board, after: chess.Board, move: chess.Move, target_color: bool, board_flip: bool) -> torch.Tensor:
+    """Build the per-ply board planes.
+
+    The tensor contains before-position pieces, the exact move, legal
+    destination heatmaps, attack/control heatmaps, move-effect heatmaps, and
+    target/opponent role planes.
+    """
+
+    planes = torch.zeros((MOVE_INPUT_CHANNELS, 8, 8), dtype=torch.float32)
+    planes[:PIECE_CHANNELS] = piece_planes(before, target_color=target_color, board_flip=board_flip)
+    planes[LEGAL_CHANNEL_START:ATTACK_CHANNEL_START] = legal_destination_planes(
+        before, target_color=target_color, board_flip=board_flip
+    )
+    planes[ATTACK_CHANNEL_START:AFTER_ATTACK_CHANNEL_START] = attack_control_planes(
+        before, target_color=target_color, board_flip=board_flip
+    )
+    planes[AFTER_ATTACK_CHANNEL_START:CAPTURE_THREAT_CHANNEL_START] = after_attack_planes(
+        before, after, target_color=target_color, board_flip=board_flip
+    )
+    planes[CAPTURE_THREAT_CHANNEL_START:KING_ZONE_CHANNEL_START] = capture_threat_planes(
+        before, after, target_color=target_color, board_flip=board_flip
+    )
+    planes[KING_ZONE_CHANNEL_START:EFFECT_CHANNEL_START] = king_zone_planes(
+        before, target_color=target_color, board_flip=board_flip
+    )
+    planes[EFFECT_CHANNEL_START:TARGET_MOVE_CHANNEL] = move_effect_planes(
+        before, after, target_color=target_color, board_flip=board_flip
+    )
+
+    is_target_move = before.turn == target_color
+    move_value = side_weight(before.turn, target_color)
+    flip = board_flip and target_color == chess.BLACK
+
+    from_row, from_col = square_to_coords(move.from_square, flip)
+    to_row, to_col = square_to_coords(move.to_square, flip)
+    planes[MOVE_FROM_CHANNEL, from_row, from_col] = move_value
+    planes[MOVE_TO_CHANNEL, to_row, to_col] = move_value
+
+    if is_target_move:
+        planes[TARGET_MOVE_CHANNEL].fill_(1.0)
+    else:
+        planes[OPPONENT_MOVE_CHANNEL].fill_(1.0)
+
+    return planes
+
+
+def is_target_move_tensor(move_tensor: torch.Tensor) -> bool:
+    """Return whether a per-ply tensor represents a target-player move."""
+
+    return float(move_tensor[TARGET_MOVE_CHANNEL].mean()) > 0.5
+
+
+def target_moving_piece_type(move_tensor: torch.Tensor) -> int | None:
+    """Infer the moving target piece type from piece and from-square planes."""
+
+    from_square = move_tensor[MOVE_FROM_CHANNEL]
+    piece_scores = (move_tensor[:6] * from_square).flatten(1).sum(dim=1)
+    if float(piece_scores.max()) <= 0.0:
+        return None
+    return int(piece_scores.argmax().item())
+
+
+def average_game_plane(plane: torch.Tensor, count: int) -> torch.Tensor:
+    """Normalize an accumulated game plane without making empty games fail."""
+
+    if count <= 0:
+        return plane
+    return plane / float(count)
+
+
+def direct_game_planes_from_ply_history(
+    ply_history: list[tuple[chess.Board, chess.Move, chess.Board]],
+    target_color: bool,
+    board_flip: bool,
+) -> torch.Tensor:
+    """Build direct PGN-derived game maps that do not depend on move planes.
+
+    The six occupancy planes average where target pieces stood across the
+    initial position and every after-move position. Capture/check destination
+    planes average over target-player plies only.
+    """
+
+    planes = torch.zeros((DIRECT_GAME_CHANNELS, 8, 8), dtype=torch.float32)
+    flip = board_flip and target_color == chess.BLACK
+
+    position_boards: list[chess.Board] = []
+    if ply_history:
+        position_boards.append(ply_history[0][0])
+        position_boards.extend(after for _, _, after in ply_history)
+
+    for board in position_boards:
+        for square, piece in board.piece_map().items():
+            if piece.color != target_color:
+                continue
+
+            channel = PIECE_TO_RELATIVE_CHANNEL[piece.piece_type]
+            row, col = square_to_coords(square, flip)
+            planes[channel, row, col] += GAME_TARGET_WEIGHT
+
+    position_count = len(position_boards)
+    for channel in range(6):
+        planes[channel] = average_game_plane(planes[channel], position_count)
+
+    target_move_count = 0
+    for before, move, after in ply_history:
+        if before.turn != target_color:
+            continue
+
+        target_move_count += 1
+        row, col = square_to_coords(move.to_square, flip)
+        if before.is_capture(move):
+            planes[GAME_DIRECT_TARGET_CAPTURE_TO_CHANNEL - DIRECT_GAME_CHANNEL_START, row, col] += GAME_TARGET_WEIGHT
+        if after.is_check():
+            planes[GAME_DIRECT_TARGET_CHECK_TO_CHANNEL - DIRECT_GAME_CHANNEL_START, row, col] += GAME_TARGET_WEIGHT
+
+    for channel in [
+        GAME_DIRECT_TARGET_CAPTURE_TO_CHANNEL - DIRECT_GAME_CHANNEL_START,
+        GAME_DIRECT_TARGET_CHECK_TO_CHANNEL - DIRECT_GAME_CHANNEL_START,
+    ]:
+        planes[channel] = average_game_plane(planes[channel], target_move_count)
+
+    return planes
+
+
+def game_planes_from_move_sequence(move_sequence: torch.Tensor) -> torch.Tensor:
+    """Aggregate one game's per-ply planes into target-emphasized game maps.
+
+    The aggregate maps are linear combinations of existing per-ply heatmaps.
+    Target-player maps are kept at full scale. Opponent-context maps receive an
+    additional 0.5 multiplier on top of the per-ply opponent weighting, so the
+    final game tensor is intentionally target-heavy.
+    """
+
+    if move_sequence.ndim != 4 or move_sequence.shape[1:] != (MOVE_INPUT_CHANNELS, 8, 8):
+        raise ValueError(
+            f"Expected move sequence shape (T, {MOVE_INPUT_CHANNELS}, 8, 8), got {tuple(move_sequence.shape)}"
+        )
+
+    planes = torch.zeros((GAME_CHANNELS, 8, 8), dtype=torch.float32)
+    target_move_count = 0
+    opponent_move_count = 0
+
+    for move_tensor in move_sequence.float():
+        target_role = float(move_tensor[TARGET_MOVE_CHANNEL].mean())
+        opponent_role = float(move_tensor[OPPONENT_MOVE_CHANNEL].mean())
+        if target_role <= 0.5 and opponent_role <= 0.5:
+            continue
+
+        legal_destinations = move_tensor[LEGAL_CHANNEL_START:ATTACK_CHANNEL_START].sum(dim=0)
+
+        if target_role > 0.5:
+            target_move_count += 1
+            piece_idx = target_moving_piece_type(move_tensor)
+            if piece_idx is not None:
+                planes[GAME_TARGET_FROM_START + piece_idx] += move_tensor[MOVE_FROM_CHANNEL] * GAME_TARGET_WEIGHT
+                planes[GAME_TARGET_TO_START + piece_idx] += move_tensor[MOVE_TO_CHANNEL] * GAME_TARGET_WEIGHT
+
+            planes[GAME_TARGET_LEGAL_DEST_CHANNEL] += legal_destinations * GAME_TARGET_WEIGHT
+            planes[GAME_TARGET_AFTER_ATTACKS_CHANNEL] += move_tensor[AFTER_TARGET_ATTACKS_CHANNEL] * GAME_TARGET_WEIGHT
+            planes[GAME_TARGET_NEW_ATTACKS_CHANNEL] += move_tensor[NEW_TARGET_ATTACKS_CHANNEL] * GAME_TARGET_WEIGHT
+            planes[GAME_TARGET_CAPTURE_TARGETS_CHANNEL] += move_tensor[TARGET_CAPTURE_TARGETS_CHANNEL] * GAME_TARGET_WEIGHT
+            planes[GAME_TARGET_THREATENS_PIECES_CHANNEL] += move_tensor[TARGET_THREATENS_PIECES_CHANNEL] * GAME_TARGET_WEIGHT
+            planes[GAME_TARGET_NEW_THREATS_CHANNEL] += move_tensor[NEW_TARGET_THREATS_CHANNEL] * GAME_TARGET_WEIGHT
+            planes[GAME_TARGET_KING_PRESSURE_CHANNEL] += move_tensor[TARGET_PRESSURE_OPPONENT_KING_CHANNEL] * GAME_TARGET_WEIGHT
+        else:
+            opponent_move_count += 1
+            planes[GAME_OPPONENT_FROM_CHANNEL] += move_tensor[MOVE_FROM_CHANNEL] * GAME_OPPONENT_WEIGHT
+            planes[GAME_OPPONENT_TO_CHANNEL] += move_tensor[MOVE_TO_CHANNEL] * GAME_OPPONENT_WEIGHT
+            planes[GAME_OPPONENT_LEGAL_DEST_CHANNEL] += legal_destinations * GAME_OPPONENT_WEIGHT
+            planes[GAME_OPPONENT_NEW_ATTACKS_CHANNEL] += move_tensor[NEW_OPPONENT_ATTACKS_CHANNEL] * GAME_OPPONENT_WEIGHT
+            planes[GAME_OPPONENT_KING_PRESSURE_CHANNEL] += (
+                move_tensor[OPPONENT_PRESSURE_TARGET_KING_CHANNEL] * GAME_OPPONENT_WEIGHT
+            )
+
+    for channel in range(GAME_TARGET_FROM_START, GAME_OPPONENT_FROM_CHANNEL):
+        planes[channel] = average_game_plane(planes[channel], target_move_count)
+    for channel in [
+        GAME_TARGET_LEGAL_DEST_CHANNEL,
+        GAME_TARGET_AFTER_ATTACKS_CHANNEL,
+        GAME_TARGET_NEW_ATTACKS_CHANNEL,
+        GAME_TARGET_CAPTURE_TARGETS_CHANNEL,
+        GAME_TARGET_THREATENS_PIECES_CHANNEL,
+        GAME_TARGET_NEW_THREATS_CHANNEL,
+        GAME_TARGET_KING_PRESSURE_CHANNEL,
+    ]:
+        planes[channel] = average_game_plane(planes[channel], target_move_count)
+    for channel in [
+        GAME_OPPONENT_FROM_CHANNEL,
+        GAME_OPPONENT_TO_CHANNEL,
+        GAME_OPPONENT_LEGAL_DEST_CHANNEL,
+        GAME_OPPONENT_NEW_ATTACKS_CHANNEL,
+        GAME_OPPONENT_KING_PRESSURE_CHANNEL,
+    ]:
+        planes[channel] = average_game_plane(planes[channel], opponent_move_count)
+
+    return planes
+
+
+def game_planes_from_move_sequence_and_direct(
+    move_sequence: torch.Tensor,
+    direct_game_planes: torch.Tensor | None = None,
+) -> torch.Tensor:
+    """Combine derived per-move aggregates with direct PGN-derived maps."""
+
+    game_planes = game_planes_from_move_sequence(move_sequence)
+    if direct_game_planes is None:
+        return game_planes
+    if direct_game_planes.shape != (DIRECT_GAME_CHANNELS, 8, 8):
+        raise ValueError(
+            f"Expected direct game planes shape {(DIRECT_GAME_CHANNELS, 8, 8)}, got {tuple(direct_game_planes.shape)}"
+        )
+
+    game_planes[DIRECT_GAME_CHANNEL_START:] = direct_game_planes
+    return game_planes
+
+
+def concatenate_game_planes(move_sequence: torch.Tensor, game_planes: torch.Tensor) -> torch.Tensor:
+    """Attach one game's aggregate maps to every ply tensor in the sequence."""
+
+    if move_sequence.ndim != 4 or move_sequence.shape[1:] != (MOVE_INPUT_CHANNELS, 8, 8):
+        raise ValueError(
+            f"Expected move sequence shape (T, {MOVE_INPUT_CHANNELS}, 8, 8), got {tuple(move_sequence.shape)}"
+        )
+    if game_planes.shape != (GAME_CHANNELS, 8, 8):
+        raise ValueError(f"Expected game planes shape {(GAME_CHANNELS, 8, 8)}, got {tuple(game_planes.shape)}")
+
+    repeated_game_planes = game_planes.unsqueeze(0).expand(move_sequence.shape[0], -1, -1, -1)
+    return torch.cat([move_sequence, repeated_game_planes], dim=1)
+
+
+def build_game_tensor(
+    move_sequence: torch.Tensor,
+    direct_game_planes: torch.Tensor | None = None,
+) -> tuple[torch.Tensor, torch.Tensor]:
+    """Return concatenated per-ply tensors plus the standalone game planes."""
+
+    game_planes = game_planes_from_move_sequence_and_direct(move_sequence, direct_game_planes=direct_game_planes)
+    return concatenate_game_planes(move_sequence, game_planes), game_planes
+
+
+def game_to_model_tensors(
     game: chess.pgn.Game,
-    record: GameRecord,
-    engine: chess.engine.SimpleEngine,
+    target_color: bool,
     config: TensorConfig,
-    cache: dict[tuple[str, bool, int], tuple[float, list[chess.Move]]],
-) -> tuple[torch.Tensor, torch.Tensor, int] | None:
-    """Convert one PGN game to a padded full-context tensor sequence."""
+) -> tuple[torch.Tensor, torch.Tensor] | None:
+    """Convert one PGN game into one padded model input tensor.
 
-    move_tensors: list[torch.Tensor] = []
+    The returned sequence has shape ``(sequence_length, INPUT_CHANNELS, 8, 8)``.
+    The padding mask has shape ``(sequence_length,)`` where True means padded.
+    """
+
     board = game.board()
-    limit = chess.engine.Limit(depth=config.stockfish_depth)
+    move_tensors: list[torch.Tensor] = []
+    ply_history: list[tuple[chess.Board, chess.Move, chess.Board]] = []
 
-    for move in game.mainline_moves():
-        mover = board.turn
+    for ply_index, move in enumerate(game.mainline_moves()):
         before = board.copy(stack=False)
         board.push(move)
         after = board.copy(stack=False)
 
-        base = base_move_tensor(before, after, record.target_color, config.board_flip)
-        context = context_planes(mover, record.target_color)
-        stockfish = stockfish_planes(
-            before,
-            after,
-            move,
-            record.target_color,
-            engine,
-            limit,
-            config.multipv,
-            config.board_flip,
-            cache,
+        if ply_index < config.skip_plies:
+            continue
+        if config.target_moves_only and before.turn != target_color:
+            continue
+
+        move_tensors.append(
+            move_planes(before, after, move, target_color=target_color, board_flip=config.board_flip)
         )
-        move_tensors.append(torch.cat([base, context, stockfish], dim=0))
+        ply_history.append((before, move, after))
 
         if len(move_tensors) == config.sequence_length:
             break
@@ -422,33 +987,41 @@ def game_to_tensor_sample(
     if not move_tensors:
         return None
 
-    valid_moves = len(move_tensors)
-    sequence = torch.zeros((config.sequence_length, INPUT_CHANNELS, 8, 8), dtype=torch.float16)
-    sequence[:valid_moves] = torch.stack(move_tensors, dim=0).to(dtype=torch.float16)
+    move_sequence = torch.stack(move_tensors, dim=0)
+    direct_game_planes = direct_game_planes_from_ply_history(
+        ply_history,
+        target_color=target_color,
+        board_flip=config.board_flip,
+    )
+    full_sequence, _ = build_game_tensor(move_sequence, direct_game_planes=direct_game_planes)
 
-    # PyTorch Transformer convention: True marks padded timesteps to ignore.
+    valid_moves = full_sequence.shape[0]
+    padded_sequence = torch.zeros((config.sequence_length, INPUT_CHANNELS, 8, 8), dtype=torch.float16)
+    padded_sequence[:valid_moves] = full_sequence.to(dtype=torch.float16)
+
     padding_mask = torch.ones((config.sequence_length,), dtype=torch.bool)
     padding_mask[:valid_moves] = False
-    return sequence, padding_mask, record.label_id
+    return padded_sequence, padding_mask
 
 
 def materialize_samples(
     records: list[GameRecord],
-    engine: chess.engine.SimpleEngine,
-    config: TensorConfig,
+    *args: object,
+    **kwargs: object,
 ) -> list[tuple[torch.Tensor, torch.Tensor, int]]:
-    """Read selected games and convert them into tensors.
+    """Read selected games and convert them into padded model tensors."""
 
-    Records are grouped by PGN file so each large multi-game file is scanned
-    once per split instead of once per selected game.
-    """
+    config = next((arg for arg in args if isinstance(arg, TensorConfig)), None)
+    if config is None:
+        config = kwargs.get("config")
+    if not isinstance(config, TensorConfig):
+        raise TypeError("materialize_samples requires a TensorConfig argument.")
 
     by_path: dict[Path, dict[int, GameRecord]] = {}
     for record in records:
         by_path.setdefault(record.pgn_path, {})[record.game_index] = record
 
     samples: list[tuple[torch.Tensor, torch.Tensor, int]] = []
-    cache: dict[tuple[str, bool, int], tuple[float, list[chess.Move]]] = {}
     completed = 0
     total = len(records)
 
@@ -462,9 +1035,10 @@ def materialize_samples(
 
                 record = selected_games.pop(game_index, None)
                 if record is not None:
-                    sample = game_to_tensor_sample(game, record, engine, config, cache)
-                    if sample is not None:
-                        samples.append(sample)
+                    tensors = game_to_model_tensors(game, record.target_color, config)
+                    if tensors is not None:
+                        sequence, padding_mask = tensors
+                        samples.append((sequence, padding_mask, record.label_id))
 
                     completed += 1
                     if completed % 25 == 0 or completed == total:
