@@ -32,7 +32,7 @@ from board_dataset import (
     materialize_samples,
     split_records,
 )
-from model import ChessStyleTransformer
+from model import ChessStyleTransformer, build_model_from_checkpoint
 
 
 def get_device() -> torch.device:
@@ -56,9 +56,7 @@ def load_model(
 
     checkpoint = torch.load(checkpoint_path, map_location=device)
     labels = checkpoint_labels(checkpoint)
-    input_channels = int(checkpoint.get("input_channels", INPUT_CHANNELS))
-    metric_dim = int(checkpoint.get("metric_dim", 128))
-    model = ChessStyleTransformer(num_classes=len(labels), in_channels=input_channels, metric_dim=metric_dim).to(device)
+    model = build_model_from_checkpoint(checkpoint, num_classes=len(labels)).to(device)
     model.load_state_dict(checkpoint["model_state_dict"])
     model.eval()
     return model, labels, checkpoint.get("args", {})

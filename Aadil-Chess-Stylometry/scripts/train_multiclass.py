@@ -1,12 +1,13 @@
-"""Train the compact multiclass chess style classifier.
+"""Train the chess style encoder with contrastive + classification objectives.
 
-Example local smoke test:
+Preferred workflow (fast, HPC-friendly): precompute tensors once, then train
+from the cache:
 
-    python3 scripts/train_multiclass.py --max-games-per-player 5 --epochs 1
+    python3 scripts/precompute_tensors.py --cache-dir results/tensor_cache_full
+    python3 scripts/train_multiclass.py --cache-dir results/tensor_cache_full
 
-Example proof run:
-
-    python3 scripts/train_multiclass.py --max-games-per-player 500 --epochs 10
+Without --cache-dir the script falls back to building tensors in-process the
+way the original proof of concept did.
 """
 
 from __future__ import annotations
@@ -14,6 +15,7 @@ from __future__ import annotations
 import argparse
 import csv
 import json
+import math
 import os
 import random
 import sys
@@ -39,7 +41,7 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 from sklearn.metrics import accuracy_score, classification_report, confusion_matrix, f1_score
-from torch.utils.data import DataLoader, Sampler
+from torch.utils.data import DataLoader, Dataset, Sampler, Subset
 
 from board_dataset import (
     ID_TO_LABEL,
@@ -54,7 +56,14 @@ from board_dataset import (
     materialize_samples,
     split_records,
 )
+from evaluation import (
+    aggregated_player_accuracy,
+    collect_embeddings,
+    player_centroids,
+    retrieval_metrics,
+)
 from model import ChessStyleTransformer
+from tensor_cache import CachedChessDataset, load_manifest
 
 
 def set_seed(seed: int) -> None:
@@ -82,7 +91,7 @@ class BalancedBatchSampler(Sampler[list[int]]):
 
     def __init__(
         self,
-        samples: list[tuple[torch.Tensor, torch.Tensor, int]],
+        labels: list[int],
         labels_per_batch: int,
         samples_per_label: int,
         seed: int,
@@ -92,7 +101,7 @@ class BalancedBatchSampler(Sampler[list[int]]):
         self.seed = seed
         self.epoch = 0
         self.label_to_indices: dict[int, list[int]] = {}
-        for idx, (_, _, label_id) in enumerate(samples):
+        for idx, label_id in enumerate(labels):
             self.label_to_indices.setdefault(int(label_id), []).append(idx)
 
         self.labels = sorted(self.label_to_indices)
@@ -129,17 +138,26 @@ class BalancedBatchSampler(Sampler[list[int]]):
         return label_chunks // self.labels_per_batch
 
 
-def make_train_loader(
-    samples: list[tuple[torch.Tensor, torch.Tensor, int]],
-    args: argparse.Namespace,
-) -> DataLoader:
+def dataset_labels(dataset: Dataset) -> list[int]:
+    """Return per-sample integer labels without loading tensors."""
+
+    if isinstance(dataset, CachedChessDataset):
+        return [int(label_id) for label_id in dataset.labels]
+    return [int(label_id) for _, _, label_id in dataset]
+
+
+def make_train_loader(dataset: Dataset, labels: list[int], args: argparse.Namespace) -> DataLoader:
     """Build either a balanced contrastive loader or the ordinary shuffled one."""
 
-    dataset = ChessStyleDataset(samples)
+    loader_kwargs = dict(
+        num_workers=args.num_workers,
+        pin_memory=torch.cuda.is_available(),
+        persistent_workers=args.num_workers > 0,
+    )
     if args.no_balanced_batches:
-        return DataLoader(dataset, batch_size=args.batch_size, shuffle=True)
+        return DataLoader(dataset, batch_size=args.batch_size, shuffle=True, **loader_kwargs)
 
-    label_counts = Counter(int(label_id) for _, _, label_id in samples)
+    label_counts = Counter(labels)
     labels_per_batch = min(args.labels_per_batch, len(label_counts))
     requested_samples_per_label = args.samples_per_label or max(2, args.batch_size // max(labels_per_batch, 1))
     samples_per_label = min(requested_samples_per_label, min(label_counts.values()))
@@ -152,12 +170,43 @@ def make_train_loader(
         f"effective_batch_size={labels_per_batch * samples_per_label}"
     )
     sampler = BalancedBatchSampler(
-        samples,
+        labels,
         labels_per_batch=labels_per_batch,
         samples_per_label=samples_per_label,
         seed=args.seed,
     )
-    return DataLoader(dataset, batch_sampler=sampler)
+    return DataLoader(dataset, batch_sampler=sampler, **loader_kwargs)
+
+
+def make_eval_loader(dataset: Dataset, args: argparse.Namespace) -> DataLoader:
+    return DataLoader(
+        dataset,
+        batch_size=args.batch_size,
+        num_workers=args.num_workers,
+        pin_memory=torch.cuda.is_available(),
+    )
+
+
+def capped_reference_dataset(dataset: Dataset, labels: list[int], cap_per_label: int, seed: int) -> Dataset:
+    """Subsample the train set so per-epoch retrieval eval stays cheap."""
+
+    if cap_per_label <= 0:
+        return dataset
+
+    rng = random.Random(seed)
+    by_label: dict[int, list[int]] = {}
+    for idx, label_id in enumerate(labels):
+        by_label.setdefault(label_id, []).append(idx)
+
+    chosen: list[int] = []
+    for indices in by_label.values():
+        indices = indices[:]
+        rng.shuffle(indices)
+        chosen.extend(indices[:cap_per_label])
+
+    if len(chosen) >= len(labels):
+        return dataset
+    return Subset(dataset, sorted(chosen))
 
 
 def evaluate(model: nn.Module, loader: DataLoader, criterion: nn.Module, device: torch.device) -> tuple[float, float, list[int], list[int]]:
@@ -171,9 +220,9 @@ def evaluate(model: nn.Module, loader: DataLoader, criterion: nn.Module, device:
 
     with torch.no_grad():
         for board, mask, y in loader:
-            board = board.to(device)
-            mask = mask.to(device)
-            y = y.to(device)
+            board = board.to(device, non_blocking=True)
+            mask = mask.to(device, non_blocking=True)
+            y = y.to(device, non_blocking=True)
 
             logits = model(board, mask)
             loss = criterion(logits, y)
@@ -191,7 +240,7 @@ def evaluate(model: nn.Module, loader: DataLoader, criterion: nn.Module, device:
 def supervised_contrastive_loss(embeddings: torch.Tensor, labels: torch.Tensor, temperature: float) -> torch.Tensor:
     """Pull same-label game embeddings together and push other labels apart."""
 
-    embeddings = F.normalize(embeddings, dim=1)
+    embeddings = F.normalize(embeddings.float(), dim=1)
     logits = embeddings @ embeddings.T / temperature
     batch_size = labels.size(0)
 
@@ -207,95 +256,16 @@ def supervised_contrastive_loss(embeddings: torch.Tensor, labels: torch.Tensor, 
     return -positive_log_prob[valid_anchors].mean()
 
 
-def collect_embeddings(
-    model: ChessStyleTransformer,
-    loader: DataLoader,
-    device: torch.device,
-) -> tuple[torch.Tensor, torch.Tensor]:
-    """Encode every game into normalized metric-space embeddings."""
+def cosine_warmup_schedule(optimizer: torch.optim.Optimizer, warmup_steps: int, total_steps: int, min_frac: float):
+    """Linear warmup followed by cosine decay to min_frac of the peak LR."""
 
-    model.eval()
-    embeddings: list[torch.Tensor] = []
-    labels: list[torch.Tensor] = []
+    def lr_lambda(step: int) -> float:
+        if step < warmup_steps:
+            return (step + 1) / max(warmup_steps, 1)
+        progress = (step - warmup_steps) / max(total_steps - warmup_steps, 1)
+        return min_frac + (1.0 - min_frac) * 0.5 * (1.0 + math.cos(math.pi * min(progress, 1.0)))
 
-    with torch.no_grad():
-        for board, mask, y in loader:
-            board = board.to(device)
-            mask = mask.to(device)
-            embeddings.append(model.encode_metric(board, mask).cpu())
-            labels.append(y.cpu())
-
-    return torch.cat(embeddings, dim=0), torch.cat(labels, dim=0)
-
-
-def retrieval_metrics(
-    query_embeddings: torch.Tensor,
-    query_labels: torch.Tensor,
-    reference_embeddings: torch.Tensor,
-    reference_labels: torch.Tensor,
-    top_k: int,
-    exclude_self: bool = False,
-) -> tuple[dict[str, object], list[int]]:
-    """Compute nearest-neighbor retrieval quality in cosine space."""
-
-    query_embeddings = F.normalize(query_embeddings.float(), dim=1)
-    reference_embeddings = F.normalize(reference_embeddings.float(), dim=1)
-    similarities = query_embeddings @ reference_embeddings.T
-
-    if exclude_self:
-        if similarities.shape[0] != similarities.shape[1]:
-            raise ValueError("exclude_self=True requires query and reference sets with the same length.")
-        similarities.fill_diagonal_(float("-inf"))
-
-    sorted_indices = similarities.argsort(dim=1, descending=True)
-    sorted_labels = reference_labels[sorted_indices]
-    relevant = sorted_labels.eq(query_labels[:, None])
-
-    k = min(top_k, similarities.shape[1])
-    topk_correct = relevant[:, :k]
-    pred_labels = sorted_labels[:, 0].tolist()
-
-    reciprocal_ranks: list[float] = []
-    average_precisions: list[float] = []
-    for query_idx in range(relevant.shape[0]):
-        relevant_positions = torch.nonzero(relevant[query_idx], as_tuple=False).flatten()
-        if relevant_positions.numel() == 0:
-            reciprocal_ranks.append(0.0)
-            average_precisions.append(0.0)
-            continue
-
-        ranks = relevant_positions.float() + 1.0
-        reciprocal_ranks.append(float(1.0 / ranks[0]))
-        hits_at_rank = torch.arange(1, relevant_positions.numel() + 1, dtype=torch.float32)
-        average_precisions.append(float((hits_at_rank / ranks).mean()))
-
-    label_top1: dict[str, float] = {}
-    top1_correct = relevant[:, 0]
-    for label_id, label_name in ID_TO_LABEL.items():
-        label_mask = query_labels.eq(label_id)
-        if bool(label_mask.any()):
-            label_top1[label_name] = float(top1_correct[label_mask].float().mean())
-
-    same_label = query_labels[:, None].eq(reference_labels[None, :])
-    if exclude_self:
-        same_label.fill_diagonal_(False)
-    finite = torch.isfinite(similarities)
-    same_values = similarities[same_label & finite]
-    different_values = similarities[(~same_label) & finite]
-    same_mean = float(same_values.mean()) if same_values.numel() else 0.0
-    different_mean = float(different_values.mean()) if different_values.numel() else 0.0
-
-    metrics: dict[str, object] = {
-        "top1": float(top1_correct.float().mean()) if top1_correct.numel() else 0.0,
-        f"top{k}": float(topk_correct.any(dim=1).float().mean()) if topk_correct.numel() else 0.0,
-        "mrr": float(np.mean(reciprocal_ranks)) if reciprocal_ranks else 0.0,
-        "map": float(np.mean(average_precisions)) if average_precisions else 0.0,
-        "same_label_cosine_mean": same_mean,
-        "different_label_cosine_mean": different_mean,
-        "cosine_margin": same_mean - different_mean,
-        "per_label_top1": label_top1,
-    }
-    return metrics, [int(label_id) for label_id in pred_labels]
+    return torch.optim.lr_scheduler.LambdaLR(optimizer, lr_lambda)
 
 
 def save_confusion_matrix(y_true: list[int], y_pred: list[int], output_dir: Path) -> None:
@@ -387,12 +357,35 @@ def save_classification_report(y_true: list[int], y_pred: list[int], output_dir:
                 )
 
 
-def train(args: argparse.Namespace) -> None:
-    """Run one full experiment and save all outputs under args.output_dir."""
+def set_label_globals(selected_labels: list[str]) -> None:
+    """Point the module-level label tables at the labels used by this run."""
 
-    set_seed(args.seed)
-    output_dir = Path(args.output_dir)
-    output_dir.mkdir(parents=True, exist_ok=True)
+    label_to_id = {name: idx for idx, name in enumerate(selected_labels)}
+    LABEL_NAMES[:] = selected_labels
+    LABEL_TO_ID.clear()
+    LABEL_TO_ID.update(label_to_id)
+    ID_TO_LABEL.clear()
+    ID_TO_LABEL.update({idx: name for name, idx in label_to_id.items()})
+
+
+def load_cached_datasets(args: argparse.Namespace) -> tuple[Dataset, Dataset, Dataset]:
+    """Load precomputed splits and align label globals with the manifest."""
+
+    cache_dir = Path(args.cache_dir)
+    manifest = load_manifest(cache_dir)
+    set_label_globals(list(manifest["labels"]))
+    print(f"Loaded tensor cache {cache_dir} with labels {manifest['labels']}")
+    print(f"Cache counts: {manifest['counts']}")
+
+    return (
+        CachedChessDataset(cache_dir, "train"),
+        CachedChessDataset(cache_dir, "val"),
+        CachedChessDataset(cache_dir, "test"),
+    )
+
+
+def build_datasets_in_process(args: argparse.Namespace) -> tuple[Dataset, Dataset, Dataset]:
+    """Original slow path: parse PGNs and build tensors inside this run."""
 
     data_dir = Path(args.data_dir)
     records = collect_game_records(data_dir=data_dir, min_plies=1)
@@ -409,14 +402,9 @@ def train(args: argparse.Namespace) -> None:
             for record in records
             if record.label_name in label_to_id
         ]
-        LABEL_NAMES[:] = selected_labels
-        LABEL_TO_ID.clear()
-        LABEL_TO_ID.update(label_to_id)
-        ID_TO_LABEL.clear()
-        ID_TO_LABEL.update({idx: name for name, idx in label_to_id.items()})
+        set_label_globals(selected_labels)
 
     print("Usable game counts:", class_counts(records))
-
     records = balance_records(records, max_games_per_player=args.max_games_per_player, seed=args.seed)
     print("Balanced game counts:", class_counts(records))
 
@@ -429,8 +417,6 @@ def train(args: argparse.Namespace) -> None:
         sequence_length=args.sequence_length,
         skip_plies=args.skip_plies,
         target_moves_only=args.target_moves_only,
-        stockfish_depth=args.stockfish_depth,
-        multipv=args.multipv,
         board_flip=not args.no_board_flip,
     )
 
@@ -444,20 +430,67 @@ def train(args: argparse.Namespace) -> None:
     if not train_samples or not val_samples or not test_samples:
         raise RuntimeError("At least one split is empty after tensor materialization.")
 
-    train_loader = make_train_loader(train_samples, args)
-    train_eval_loader = DataLoader(ChessStyleDataset(train_samples), batch_size=args.batch_size)
-    val_loader = DataLoader(ChessStyleDataset(val_samples), batch_size=args.batch_size)
-    test_loader = DataLoader(ChessStyleDataset(test_samples), batch_size=args.batch_size)
+    return ChessStyleDataset(train_samples), ChessStyleDataset(val_samples), ChessStyleDataset(test_samples)
+
+
+def train(args: argparse.Namespace) -> None:
+    """Run one full experiment and save all outputs under args.output_dir."""
+
+    set_seed(args.seed)
+    output_dir = Path(args.output_dir)
+    output_dir.mkdir(parents=True, exist_ok=True)
+
+    if args.cache_dir:
+        train_dataset, val_dataset, test_dataset = load_cached_datasets(args)
+    else:
+        args.num_workers = 0
+        train_dataset, val_dataset, test_dataset = build_datasets_in_process(args)
+
+    train_labels = dataset_labels(train_dataset)
+    train_loader = make_train_loader(train_dataset, train_labels, args)
+    train_eval_loader = make_eval_loader(train_dataset, args)
+    val_loader = make_eval_loader(val_dataset, args)
+    test_loader = make_eval_loader(test_dataset, args)
+    reference_dataset = capped_reference_dataset(
+        train_dataset, train_labels, args.eval_reference_cap, args.seed
+    )
+    reference_loader = make_eval_loader(reference_dataset, args)
 
     device = get_device()
     print(f"Using device: {device}")
+
     model = ChessStyleTransformer(
         num_classes=len(ID_TO_LABEL),
         in_channels=INPUT_CHANNELS,
+        conv_channels=args.conv_channels,
+        n_blocks=args.n_blocks,
+        move_dim=args.move_dim,
+        transformer_dim=args.transformer_dim,
+        n_layers=args.n_layers,
+        n_heads=args.n_heads,
+        feedforward_dim=args.feedforward_dim,
         metric_dim=args.metric_dim,
+        dropout=args.dropout,
+        pooling=args.pooling,
     ).to(device)
+    param_count = sum(p.numel() for p in model.parameters())
+    print(f"Model parameters: {param_count / 1e6:.2f}M")
+
     optimizer = torch.optim.AdamW(model.parameters(), lr=args.lr, weight_decay=args.weight_decay)
-    criterion = nn.CrossEntropyLoss()
+    steps_per_epoch = max(len(train_loader), 1)
+    scheduler = cosine_warmup_schedule(
+        optimizer,
+        warmup_steps=args.warmup_epochs * steps_per_epoch,
+        total_steps=args.epochs * steps_per_epoch,
+        min_frac=args.min_lr_frac,
+    )
+    criterion = nn.CrossEntropyLoss(label_smoothing=args.label_smoothing)
+
+    amp_enabled = device.type == "cuda" and not args.no_amp
+    amp_dtype = torch.bfloat16 if amp_enabled and torch.cuda.is_bf16_supported() else torch.float16
+    scaler = torch.amp.GradScaler(enabled=amp_enabled and amp_dtype == torch.float16)
+    if amp_enabled:
+        print(f"Mixed precision enabled ({amp_dtype})")
 
     best_val_acc = -1.0
     best_val_retrieval_map = -1.0
@@ -473,19 +506,31 @@ def train(args: argparse.Namespace) -> None:
         train_pred: list[int] = []
 
         for board, mask, y in train_loader:
-            board = board.to(device)
-            mask = mask.to(device)
-            y = y.to(device)
+            board = board.to(device, non_blocking=True)
+            mask = mask.to(device, non_blocking=True)
+            y = y.to(device, non_blocking=True)
 
-            optimizer.zero_grad()
-            embeddings = model.encode_game(board, mask)
-            logits = model.classify_embedding(embeddings)
-            metric_embeddings = model.project_metric(embeddings)
-            classification_loss = criterion(logits, y)
-            contrastive_loss = supervised_contrastive_loss(metric_embeddings, y, args.contrastive_temperature)
-            loss = args.classification_weight * classification_loss + args.contrastive_weight * contrastive_loss
-            loss.backward()
-            optimizer.step()
+            optimizer.zero_grad(set_to_none=True)
+            with torch.autocast(device_type=device.type, dtype=amp_dtype, enabled=amp_enabled):
+                embeddings = model.encode_game(board, mask)
+                logits = model.classify_embedding(embeddings)
+                metric_embeddings = model.project_metric(embeddings)
+                classification_loss = criterion(logits, y)
+                contrastive_loss = supervised_contrastive_loss(
+                    metric_embeddings, y, args.contrastive_temperature
+                )
+                loss = (
+                    args.classification_weight * classification_loss
+                    + args.contrastive_weight * contrastive_loss
+                )
+
+            scaler.scale(loss).backward()
+            if args.grad_clip > 0:
+                scaler.unscale_(optimizer)
+                torch.nn.utils.clip_grad_norm_(model.parameters(), args.grad_clip)
+            scaler.step(optimizer)
+            scaler.update()
+            scheduler.step()
 
             train_loss_sum += loss.item() * y.size(0)
             train_total += y.size(0)
@@ -495,27 +540,25 @@ def train(args: argparse.Namespace) -> None:
         train_loss = train_loss_sum / max(train_total, 1)
         train_acc = accuracy_score(train_true, train_pred)
         val_loss, val_acc, _, _ = evaluate(model, val_loader, criterion, device)
-        test_loss, test_acc, test_true, test_pred = evaluate(model, test_loader, criterion, device)
-        train_embeddings, train_embedding_labels = collect_embeddings(model, train_eval_loader, device)
+
+        reference_embeddings, reference_labels = collect_embeddings(model, reference_loader, device)
         val_embeddings, val_embedding_labels = collect_embeddings(model, val_loader, device)
         val_retrieval, _ = retrieval_metrics(
             val_embeddings,
             val_embedding_labels,
-            train_embeddings,
-            train_embedding_labels,
+            reference_embeddings,
+            reference_labels,
             top_k=args.retrieval_top_k,
+            id_to_label=ID_TO_LABEL,
         )
 
         row = {
             "epoch": epoch,
+            "lr": scheduler.get_last_lr()[0],
             "train_loss": train_loss,
             "train_acc": train_acc,
             "val_loss": val_loss,
             "val_acc": val_acc,
-            "test_loss": test_loss,
-            "test_acc": test_acc,
-            "test_macro_f1": f1_score(test_true, test_pred, average="macro", zero_division=0),
-            "test_weighted_f1": f1_score(test_true, test_pred, average="weighted", zero_division=0),
             "val_retrieval_top1": float(val_retrieval["top1"]),
             "val_retrieval_map": float(val_retrieval["map"]),
             "val_retrieval_cosine_margin": float(val_retrieval["cosine_margin"]),
@@ -524,16 +567,18 @@ def train(args: argparse.Namespace) -> None:
 
         print(
             f"Epoch {epoch:02d}/{args.epochs} | "
-            f"train_acc={train_acc * 100:.1f}% val_acc={val_acc * 100:.1f}% "
-            f"test_acc={test_acc * 100:.1f}% val_retrieval_top1={float(val_retrieval['top1']) * 100:.1f}%"
+            f"lr={row['lr']:.2e} train_acc={train_acc * 100:.1f}% val_acc={val_acc * 100:.1f}% "
+            f"val_retrieval_top1={float(val_retrieval['top1']) * 100:.1f}% "
+            f"val_map={float(val_retrieval['map']) * 100:.1f}%"
         )
 
         checkpoint_payload = {
             "model_state_dict": model.state_dict(),
-            "labels": ID_TO_LABEL,
+            "labels": dict(ID_TO_LABEL),
             "input_channels": INPUT_CHANNELS,
             "embedding_dim": model.embedding_dim,
             "metric_dim": model.metric_dim,
+            "model_config": model.config(),
             "args": vars(args),
         }
         if val_acc > best_val_acc:
@@ -548,22 +593,27 @@ def train(args: argparse.Namespace) -> None:
             writer.writeheader()
             writer.writerows(history)
 
+    # Final evaluation. Classification numbers come from the best-accuracy
+    # checkpoint; retrieval and aggregation numbers from the best-MAP one.
     checkpoint = torch.load(checkpoint_path, map_location=device)
     model.load_state_dict(checkpoint["model_state_dict"])
     test_loss, test_acc, test_true, test_pred = evaluate(model, test_loader, criterion, device)
-    print(f"Best-checkpoint test_loss={test_loss:.4f} test_acc={test_acc * 100:.1f}%")
+    test_macro_f1 = f1_score(test_true, test_pred, average="macro", zero_division=0)
+    print(f"Best-checkpoint test_loss={test_loss:.4f} test_acc={test_acc * 100:.1f}% macro_f1={test_macro_f1:.3f}")
 
     embedding_checkpoint = torch.load(embedding_checkpoint_path, map_location=device)
     model.load_state_dict(embedding_checkpoint["model_state_dict"])
     train_embeddings, train_embedding_labels = collect_embeddings(model, train_eval_loader, device)
     val_embeddings, val_embedding_labels = collect_embeddings(model, val_loader, device)
     test_embeddings, test_embedding_labels = collect_embeddings(model, test_loader, device)
+
     train_retrieval, train_retrieval_pred = retrieval_metrics(
         train_embeddings,
         train_embedding_labels,
         train_embeddings,
         train_embedding_labels,
         top_k=args.retrieval_top_k,
+        id_to_label=ID_TO_LABEL,
         exclude_self=True,
     )
     val_retrieval, val_retrieval_pred = retrieval_metrics(
@@ -572,6 +622,7 @@ def train(args: argparse.Namespace) -> None:
         train_embeddings,
         train_embedding_labels,
         top_k=args.retrieval_top_k,
+        id_to_label=ID_TO_LABEL,
     )
     test_retrieval, test_retrieval_pred = retrieval_metrics(
         test_embeddings,
@@ -579,6 +630,7 @@ def train(args: argparse.Namespace) -> None:
         train_embeddings,
         train_embedding_labels,
         top_k=args.retrieval_top_k,
+        id_to_label=ID_TO_LABEL,
     )
     print(
         "Retrieval accuracy | "
@@ -586,6 +638,23 @@ def train(args: argparse.Namespace) -> None:
         f"val_top1={val_retrieval['top1'] * 100:.1f}% "
         f"test_top1={test_retrieval['top1'] * 100:.1f}%"
     )
+
+    # Player-level identification from aggregated games: the headline metric.
+    centroids = player_centroids(train_embeddings, train_embedding_labels, num_classes=len(ID_TO_LABEL))
+    aggregated = aggregated_player_accuracy(
+        test_embeddings,
+        test_embedding_labels,
+        centroids,
+        ks=args.agg_ks,
+        trials=args.agg_trials,
+        seed=args.seed,
+        id_to_label=ID_TO_LABEL,
+    )
+    for k in args.agg_ks:
+        overall = aggregated["per_k"][str(k)]["overall"]
+        print(f"Aggregated player ID accuracy (k={k} games): {overall * 100:.1f}%")
+    with open(output_dir / "aggregated_metrics.json", "w", encoding="utf-8") as f:
+        json.dump(aggregated, f, indent=2)
 
     save_classification_report(test_true, test_pred, output_dir)
     save_confusion_matrix(test_true, test_pred, output_dir)
@@ -614,11 +683,15 @@ def train(args: argparse.Namespace) -> None:
                 "input_channels": INPUT_CHANNELS,
                 "embedding_dim": model.embedding_dim,
                 "metric_dim": model.metric_dim,
-                "labels": ID_TO_LABEL,
+                "model_config": model.config(),
+                "param_count": param_count,
+                "labels": dict(ID_TO_LABEL),
                 "final_test_loss": test_loss,
                 "final_test_acc": test_acc,
+                "final_test_macro_f1": test_macro_f1,
                 "best_val_retrieval_map": best_val_retrieval_map,
                 "retrieval_metrics": retrieval_metrics_payload,
+                "aggregated_metrics": aggregated,
             },
             f,
             indent=2,
@@ -627,29 +700,55 @@ def train(args: argparse.Namespace) -> None:
 
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description="Train a selected-player chess style classifier")
+    parser.add_argument("--cache-dir", help="Tensor cache from scripts/precompute_tensors.py (preferred).")
     parser.add_argument("--data-dir", default=str(ROOT / "PGN_data"))
     parser.add_argument("--output-dir", default=str(ROOT / "results" / "multiclass_proof"))
-    parser.add_argument("--labels", nargs="+", help="Train on a selected subset of player labels.")
+    parser.add_argument("--labels", nargs="+", help="Train on a selected subset of player labels (no-cache path).")
     parser.add_argument("--max-games-per-player", type=int, default=500)
-    parser.add_argument("--sequence-length", type=int, default=80)
-    parser.add_argument("--skip-plies", type=int, default=0, help="Skip this many opening plies before recording tensors.")
+    parser.add_argument("--sequence-length", type=int, default=60)
+    parser.add_argument("--skip-plies", type=int, default=12, help="Skip this many opening plies before recording tensors.")
     parser.add_argument("--target-moves-only", action="store_true", help="Encode only decisions made by the target player.")
-    parser.add_argument("--stockfish-depth", type=int, default=0)
-    parser.add_argument("--multipv", type=int, default=0)
-    parser.add_argument("--epochs", type=int, default=10)
-    parser.add_argument("--batch-size", type=int, default=16)
-    parser.add_argument("--metric-dim", type=int, default=128)
-    parser.add_argument("--lr", type=float, default=3e-4)
-    parser.add_argument("--weight-decay", type=float, default=1e-4)
-    parser.add_argument("--classification-weight", type=float, default=1.0)
-    parser.add_argument("--contrastive-weight", type=float, default=0.1)
-    parser.add_argument("--contrastive-temperature", type=float, default=0.1)
-    parser.add_argument("--labels-per-batch", type=int, default=len(ID_TO_LABEL))
-    parser.add_argument("--samples-per-label", type=int, default=0)
-    parser.add_argument("--no-balanced-batches", action="store_true")
-    parser.add_argument("--retrieval-top-k", type=int, default=5)
-    parser.add_argument("--seed", type=int, default=42)
     parser.add_argument("--no-board-flip", action="store_true")
+
+    parser.add_argument("--epochs", type=int, default=40)
+    parser.add_argument("--batch-size", type=int, default=64, help="Evaluation batch size (and train batch without balancing).")
+    parser.add_argument("--lr", type=float, default=3e-4)
+    parser.add_argument("--min-lr-frac", type=float, default=0.02, help="Final LR as a fraction of peak.")
+    parser.add_argument("--warmup-epochs", type=int, default=3)
+    parser.add_argument("--weight-decay", type=float, default=1e-2)
+    parser.add_argument("--grad-clip", type=float, default=1.0)
+    parser.add_argument("--label-smoothing", type=float, default=0.0)
+    parser.add_argument("--no-amp", action="store_true", help="Disable mixed precision on GPU.")
+    parser.add_argument("--num-workers", type=int, default=4)
+
+    parser.add_argument("--conv-channels", type=int, default=64)
+    parser.add_argument("--n-blocks", type=int, default=6)
+    parser.add_argument("--move-dim", type=int, default=256)
+    parser.add_argument("--transformer-dim", type=int, default=256)
+    parser.add_argument("--n-layers", type=int, default=4)
+    parser.add_argument("--n-heads", type=int, default=8)
+    parser.add_argument("--feedforward-dim", type=int, default=1024)
+    parser.add_argument("--metric-dim", type=int, default=128)
+    parser.add_argument("--dropout", type=float, default=0.1)
+    parser.add_argument("--pooling", choices=["attention", "mean"], default="attention")
+
+    parser.add_argument("--classification-weight", type=float, default=0.25)
+    parser.add_argument("--contrastive-weight", type=float, default=1.0)
+    parser.add_argument("--contrastive-temperature", type=float, default=0.07)
+    parser.add_argument("--labels-per-batch", type=int, default=8)
+    parser.add_argument("--samples-per-label", type=int, default=32)
+    parser.add_argument("--no-balanced-batches", action="store_true")
+
+    parser.add_argument("--retrieval-top-k", type=int, default=5)
+    parser.add_argument(
+        "--eval-reference-cap",
+        type=int,
+        default=250,
+        help="Per-label cap on train reference embeddings for per-epoch retrieval eval (0 = full train set).",
+    )
+    parser.add_argument("--agg-ks", type=int, nargs="+", default=[1, 3, 5, 10, 25])
+    parser.add_argument("--agg-trials", type=int, default=200)
+    parser.add_argument("--seed", type=int, default=42)
     return parser.parse_args()
 
 

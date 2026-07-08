@@ -8,3 +8,4 @@ __pycache__/
 *.pt
 CHESS_COM_EMAIL_DRAFT.md
 POC_REPORT.md
+.venv-jubail/

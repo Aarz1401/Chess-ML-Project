@@ -63,8 +63,14 @@ precision, not by test performance.
 ```text
 PGN_data/                    PGN files for the eight supported players
 src/board_dataset.py         PGN parsing and 84-plane tensor construction
-src/model.py                 CNN + Transformer + metric projection model
-scripts/train_multiclass.py  Training, retrieval evaluation, checkpoints
+src/model.py                 Residual CNN tower + Transformer + metric heads
+src/tensor_cache.py          Memory-mapped tensor cache used by training
+src/evaluation.py            Retrieval + aggregated player-ID metrics
+scripts/precompute_tensors.py
+                             One-time multiprocessing tensor cache builder
+scripts/train_multiclass.py  Training (AMP, cosine schedule, balanced batches)
+scripts/evaluate_aggregated.py
+                             Player-level aggregation metrics and figures
 scripts/export_embeddings.py Export learned metric embeddings
 scripts/visualize_embeddings.py
                              PCA/t-SNE/UMAP embedding plots
@@ -73,6 +79,9 @@ scripts/predict_by_similarity.py
 scripts/visualize_move_planes.py
 scripts/visualize_game_planes.py
                              Debug visualizations for tensor channels
+scripts/jubail_precompute.slurm
+scripts/jubail_train.slurm
+scripts/submit_jubail.sh     One-command launcher for Jubail (NYUAD HPC)
 ```
 
 ## Setup
@@ -86,24 +95,34 @@ pip install -r requirements.txt
 
 ## Train An Embedding Model
 
-Example Tal-versus-Carlsen embedding run:
+The preferred workflow builds tensors once into a memory-mapped cache, then
+trains from the cache:
 
 ```bash
-python3 scripts/train_multiclass.py \
-  --labels Tal Carlsen \
-  --max-games-per-player 500 \
+# One-time: build the tensor cache (multiprocessing, CPU-bound)
+python3 scripts/precompute_tensors.py \
+  --cache-dir results/tensor_cache_full \
+  --max-games-per-player 4000 \
   --sequence-length 60 \
   --skip-plies 12 \
-  --epochs 10 \
-  --batch-size 32 \
-  --samples-per-label 16 \
-  --lr 1e-4 \
-  --weight-decay 1e-3 \
-  --classification-weight 0.25 \
-  --contrastive-weight 1.0 \
-  --metric-dim 64 \
-  --output-dir results/poc_tal_carlsen_embedding_500
+  --workers 8
+
+# Train from the cache (uses GPU + mixed precision when available)
+python3 scripts/train_multiclass.py \
+  --cache-dir results/tensor_cache_full \
+  --output-dir results/full8
+
+# Player-level evaluation and figures
+python3 scripts/evaluate_aggregated.py \
+  --checkpoint results/full8/best_embedding_model.pt \
+  --cache-dir results/tensor_cache_full \
+  --output-dir results/full8/aggregated_eval
 ```
+
+The headline metric is aggregated player identification: average k held-out
+game embeddings per player and match against per-player reference centroids.
+`aggregated_metrics.json` and `aggregation_curve.png` report accuracy at
+k = 1, 3, 5, 10, 25.
 
 Training saves:
 
@@ -112,9 +131,27 @@ best_model.pt                 best validation classification checkpoint
 best_embedding_model.pt       best validation retrieval checkpoint
 metrics.csv                   epoch metrics
 retrieval_metrics.json        top-k, MRR, MAP, cosine margin
+aggregated_metrics.json       player-ID accuracy vs games aggregated
 classification_report.csv
 confusion_matrix.png
 ```
+
+## Run On Jubail (NYUAD HPC)
+
+One-time environment setup on a login node, then a single submit script chains
+the CPU precompute job and the GPU training job:
+
+```bash
+module load python/3.11   # or: module load python
+python3 -m venv .venv-jubail
+source .venv-jubail/bin/activate
+pip install --upgrade pip && pip install -r requirements.txt umap-learn
+
+bash scripts/submit_jubail.sh
+```
+
+The cache lands in `$SCRATCH/chess_style/tensor_cache_full` and results in
+`results/full8_<timestamp>/`. Override with `CACHE_DIR=... RUN_NAME=...`.
 
 ## Export Embeddings
 

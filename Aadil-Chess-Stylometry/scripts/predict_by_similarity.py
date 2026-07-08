@@ -17,7 +17,7 @@ import torch
 import torch.nn.functional as F
 
 from board_dataset import ID_TO_LABEL, INPUT_CHANNELS, TensorConfig, game_to_model_tensors
-from model import ChessStyleTransformer
+from model import ChessStyleTransformer, build_model_from_checkpoint
 
 
 def parse_color(value: str) -> bool:
@@ -54,9 +54,7 @@ def load_model(checkpoint_path: Path, device: torch.device) -> tuple[ChessStyleT
 
     checkpoint = torch.load(checkpoint_path, map_location=device)
     label_names = checkpoint_labels(checkpoint)
-    input_channels = int(checkpoint.get("input_channels", INPUT_CHANNELS))
-    metric_dim = int(checkpoint.get("metric_dim", 128))
-    model = ChessStyleTransformer(num_classes=len(label_names), in_channels=input_channels, metric_dim=metric_dim).to(device)
+    model = build_model_from_checkpoint(checkpoint, num_classes=len(label_names)).to(device)
     model.load_state_dict(checkpoint["model_state_dict"])
     model.eval()
     return model, label_names
