@@ -1,6 +1,12 @@
 # Jubail workflow
 
-Run from the repository root. Existing job scripts are in `scripts/`:
+For the atlas's next learned representation, start with the
+[representation roadmap and live readiness findings](representation-roadmap.md).
+It includes a separate `scripts/jubail_gpu_probe.slurm` environment check and
+explains which parts of the legacy launcher must change before large runs.
+
+The existing neural workflow below predates that plan. Run it from the
+repository root in a **scratch checkout**. Existing job scripts are in `scripts/`:
 
 - `jubail_precompute.slurm`: CPU tensor generation.
 - `jubail_train.slurm`: GPU training followed by aggregated evaluation.

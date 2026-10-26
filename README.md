@@ -20,6 +20,7 @@ python3 -m http.server 8765 --directory website/dist
 
 Open <http://localhost:8765>. See [website setup and methodology](website/README.md).
 For the interview explanation, read [how Game Atlas works](docs/game-atlas-interview.md).
+For the next model experiment, see [better representations and Jubail](docs/representation-roadmap.md).
 The new website code is MIT licensed; the existing PGN data is not relicensed.
 
 ## Layout
