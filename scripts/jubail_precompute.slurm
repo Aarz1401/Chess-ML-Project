@@ -9,7 +9,7 @@
 #SBATCH --error=logs/precompute_%j.err
 
 # CPU-only job: builds the tensor cache once so GPU jobs never touch PGN
-# parsing. Submit from the Aadil-Chess-Stylometry directory (submit_jubail.sh
+# parsing. Submit from the repository root (submit_jubail.sh
 # does this for you).
 
 set -euo pipefail

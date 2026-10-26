@@ -1,4 +1,9 @@
-# Chess Style Fingerprint
+# Archived human-versus-Stockfish experiments
+
+This is the earlier research workflow, preserved with its notebook and results.
+The active project is at the [repository root](../../README.md).
+Run this workflow from `archive/chess-style-fingerprint/` with its own dependencies.
+Its local `data/` is ignored by Git and is not included in a fresh clone.
 
 This project tests whether chess games contain measurable style signals. The final workflow compares a neural board-sequence model against a simpler feature-based classifier on human-vs-Stockfish style classification.
 

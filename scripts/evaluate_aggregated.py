@@ -152,20 +152,30 @@ def plot_embedding_map(
         points = points[chosen]
         label_array = label_array[chosen]
 
-    method = "UMAP"
-    try:
-        import umap  # type: ignore
+    # Neighborhood projections are not meaningful for tiny smoke-test splits.
+    if points.shape[0] < 4:
+        from sklearn.decomposition import PCA
 
-        reducer = umap.UMAP(n_components=2, random_state=seed, metric="cosine")
-        projected = reducer.fit_transform(points)
-    except ImportError:
-        from sklearn.manifold import TSNE
+        method = "PCA"
+        if points.shape[0] < 2:
+            projected = np.zeros((points.shape[0], 2))
+        else:
+            projected = PCA(n_components=2).fit_transform(points)
+    else:
+        method = "UMAP"
+        try:
+            import umap  # type: ignore
 
-        method = "t-SNE"
-        perplexity = min(30.0, max(5.0, (points.shape[0] - 1) / 3))
-        projected = TSNE(
-            n_components=2, perplexity=perplexity, init="pca", learning_rate="auto", random_state=seed
-        ).fit_transform(points)
+            reducer = umap.UMAP(n_components=2, random_state=seed, metric="cosine")
+            projected = reducer.fit_transform(points)
+        except ImportError:
+            from sklearn.manifold import TSNE
+
+            method = "t-SNE"
+            perplexity = min(30.0, max(1.0, (points.shape[0] - 1) / 3))
+            projected = TSNE(
+                n_components=2, perplexity=perplexity, init="pca", learning_rate="auto", random_state=seed
+            ).fit_transform(points)
 
     fig, ax = plt.subplots(figsize=(8.5, 7))
     ax.grid(False)

@@ -89,7 +89,7 @@ def save_stats(rows: list[dict[str, float | int | str]], output_path: Path) -> N
 
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description="Inspect scale statistics for every input plane.")
-    parser.add_argument("--data-dir", default=str(ROOT / "PGN_data"))
+    parser.add_argument("--data-dir", default=str(ROOT / "data" / "pgn"))
     parser.add_argument("--output", default=str(ROOT / "results" / "plane_stats" / "plane_stats.csv"))
     parser.add_argument("--max-games-per-player", type=int, default=100)
     parser.add_argument("--split", choices=["all", "train", "val", "test"], default="train")

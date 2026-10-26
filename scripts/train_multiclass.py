@@ -701,7 +701,7 @@ def train(args: argparse.Namespace) -> None:
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description="Train a selected-player chess style classifier")
     parser.add_argument("--cache-dir", help="Tensor cache from scripts/precompute_tensors.py (preferred).")
-    parser.add_argument("--data-dir", default=str(ROOT / "PGN_data"))
+    parser.add_argument("--data-dir", default=str(ROOT / "data" / "pgn"))
     parser.add_argument("--output-dir", default=str(ROOT / "results" / "multiclass_proof"))
     parser.add_argument("--labels", nargs="+", help="Train on a selected subset of player labels (no-cache path).")
     parser.add_argument("--max-games-per-player", type=int, default=500)

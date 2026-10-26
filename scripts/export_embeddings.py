@@ -118,7 +118,7 @@ def save_embedding_split(
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description="Export learned game embeddings from a trained checkpoint.")
     parser.add_argument("--checkpoint", required=True, help="Path to best_model.pt")
-    parser.add_argument("--data-dir", default=str(ROOT / "PGN_data"))
+    parser.add_argument("--data-dir", default=str(ROOT / "data" / "pgn"))
     parser.add_argument("--output-dir", default=str(ROOT / "results" / "embeddings"))
     parser.add_argument("--max-games-per-player", type=int, default=500)
     parser.add_argument("--sequence-length", type=int, default=80)

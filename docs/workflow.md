@@ -1,4 +1,8 @@
-# Chess Style Fingerprint
+# Model and workflow reference
+
+Start with the [root README](../README.md). Run commands below from the repository root.
+Historical POC figures describe an earlier run, not validation of the current architecture.
+Old checkpoints may require the code version that produced them.
 
 Chess Style Fingerprint is a machine-learning project for learning player-style
 embeddings directly from PGN games. Instead of using player metadata, Stockfish
@@ -61,7 +65,7 @@ precision, not by test performance.
 ## Repository Layout
 
 ```text
-PGN_data/                    PGN files for the eight supported players
+data/pgn/                    PGN files for the eight supported players
 src/board_dataset.py         PGN parsing and 84-plane tensor construction
 src/model.py                 Residual CNN tower + Transformer + metric heads
 src/tensor_cache.py          Memory-mapped tensor cache used by training
@@ -87,7 +91,7 @@ scripts/submit_jubail.sh     One-command launcher for Jubail (NYUAD HPC)
 ## Setup
 
 ```bash
-cd Aadil-Chess-Stylometry
+cd Chess-ML-Project
 python3 -m venv .venv
 source .venv/bin/activate
 pip install -r requirements.txt

@@ -1,92 +1,73 @@
-# Chess ML Project
+# Chess Style Fingerprint
 
-This repository contains my chess machine-learning work, centered on learning
-style fingerprints from PGN games.
+Learn player-associated chess embeddings from PGN games using an 84-channel
+board representation, a CNN + Transformer, and supervised contrastive learning.
 
-The main public-facing project is:
+This is the active project in the
+[Chess-ML-Project GitHub repository](https://github.com/Aarz1401/Chess-ML-Project).
+Start here and run commands from this directory.
 
-```text
-Aadil-Chess-Stylometry/
-```
-
-It builds neural embeddings for chess games using board-state and move-sequence
-features, then evaluates whether games by the same player are close together in
-embedding space.
-
-## Featured Project: Chess Style Fingerprint
-
-`Aadil-Chess-Stylometry` learns a similarity space for chess games without using
-player names, Stockfish scores, or simple per-piece move counts. Each game is
-converted into a sequence of `84 x 8 x 8` board tensors and encoded with a
-spatial CNN plus Transformer. A supervised contrastive objective trains a
-normalized metric embedding for cosine similarity search.
-
-Proof-of-concept result:
-
-| Experiment | Held-out result |
-|---|---:|
-| Tal vs Carlsen top-1 nearest-game retrieval | 76.0% |
-| Tal vs Carlsen top-5 nearest-game retrieval | 85.0% |
-| Retrieval mean average precision | 82.0% |
-| Auxiliary classification accuracy | 73.0% |
-
-The held-out split contained 100 games, and the first 12 plies were skipped to
-reduce direct opening memorization. The binary baseline is 50%.
-
-Start here:
-
-- [Project README](Aadil-Chess-Stylometry/README.md)
-- [Model code](Aadil-Chess-Stylometry/src/model.py)
-- [Tensor construction](Aadil-Chess-Stylometry/src/board_dataset.py)
-- [Training script](Aadil-Chess-Stylometry/scripts/train_multiclass.py)
-- [Embedding visualization](Aadil-Chess-Stylometry/scripts/visualize_embeddings.py)
-
-## Repository Structure
+## Layout
 
 ```text
-Aadil-Chess-Stylometry/
-  Current public project. CNN + Transformer chess style embeddings, metric
-  learning, retrieval evaluation, and embedding visualization.
-
-chess-style-fingerprint/
-  Earlier research workflow and experiments comparing neural board-sequence
-  models with feature-based classifiers, including human-vs-Stockfish style
-  experiments.
+src/                         Board tensors, model, cache, evaluation
+scripts/                     Training, evaluation, visualization, Jubail jobs
+data/pgn/                    Eight player PGN files (versioned)
+notebooks/                   Explore saved results
+docs/                        Workflow, repository audit, Jubail guidance
+archive/chess-style-fingerprint/
+                             Earlier human-vs-Stockfish research
+results/                     Local checkpoints and generated reports (ignored)
 ```
 
-## Quick Start
+The former `Aadil-Chess-Stylometry/` is now the root project. The former
+`chess-style-fingerprint/` is archived because it solves a different task with
+34-channel tensors, Stockfish-derived features, and different dependencies.
+Both were ordinary folders in this one Git repository, not separate clones.
+See the [audit and migration map](docs/project-audit.md).
+
+## Setup
 
 ```bash
-cd Aadil-Chess-Stylometry
 python3 -m venv .venv
 source .venv/bin/activate
-pip install -r requirements.txt
+python -m pip install -r requirements.txt
 ```
 
-Train the current embedding proof of concept:
+## Small local check
+
+This checks the full cache → train → evaluate path with a deliberately tiny
+model and dataset. Its scores are not research results.
 
 ```bash
-python3 scripts/train_multiclass.py \
-  --labels Tal Carlsen \
-  --max-games-per-player 500 \
-  --sequence-length 60 \
-  --skip-plies 12 \
-  --epochs 10 \
-  --batch-size 32 \
-  --samples-per-label 16 \
-  --lr 1e-4 \
-  --weight-decay 1e-3 \
-  --classification-weight 0.25 \
-  --contrastive-weight 1.0 \
-  --metric-dim 64 \
-  --output-dir results/poc_tal_carlsen_embedding_500
+python scripts/precompute_tensors.py \
+  --cache-dir results/smoke_cache --labels Tal Carlsen \
+  --max-games-per-player 10 --sequence-length 8 --min-valid-plies 4 --workers 2
+
+python scripts/train_multiclass.py \
+  --cache-dir results/smoke_cache --output-dir results/cleanup_smoke \
+  --sequence-length 8 --epochs 1 --warmup-epochs 0 --num-workers 0 \
+  --batch-size 4 --labels-per-batch 2 --samples-per-label 2 \
+  --conv-channels 8 --n-blocks 1 --move-dim 16 --transformer-dim 16 \
+  --n-layers 1 --n-heads 2 --feedforward-dim 32 --metric-dim 8 \
+  --agg-ks 1 --agg-trials 2
+
+python scripts/evaluate_aggregated.py \
+  --checkpoint results/cleanup_smoke/best_embedding_model.pt \
+  --cache-dir results/smoke_cache --output-dir results/cleanup_smoke/aggregated_eval \
+  --ks 1 --trials 2 --num-workers 0
 ```
 
-## Notes
+For larger experiments, use the [workflow reference](docs/workflow.md) and
+[Jubail guide](docs/jubail.md). Keep the cache preprocessing settings consistent
+with the training arguments recorded in checkpoints.
 
-- Generated checkpoints, plots, local result folders, and outreach drafts are
-  ignored by Git.
-- The included PGN data is used for reproducible local experiments.
-- The current proof of concept shows measurable player-associated signal, but
-  it is not a claim that style has been fully isolated from era, opening trends,
-  opponent pools, or game-selection effects.
+## Research status
+
+A saved historical Tal-versus-Carlsen run reports 76% top-1 retrieval and
+82% retrieval MAP on 100 held-out games. These results predate the current
+residual model architecture; they have not been reproduced during this cleanup.
+Era, opening, opponent, and duplicate-game effects still need controlled
+validation. Player identification alone does not establish a measure of style.
+
+The [project audit](docs/project-audit.md) lists the next improvements in order.

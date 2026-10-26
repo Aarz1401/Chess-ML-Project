@@ -286,7 +286,7 @@ def materialize_split(
 
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description="Precompute and cache game tensors.")
-    parser.add_argument("--data-dir", default=str(ROOT / "PGN_data"))
+    parser.add_argument("--data-dir", default=str(ROOT / "data" / "pgn"))
     parser.add_argument("--cache-dir", required=True)
     parser.add_argument("--labels", nargs="+", default=list(LABEL_NAMES), help="Player labels to include.")
     parser.add_argument("--max-games-per-player", type=int, default=4000)

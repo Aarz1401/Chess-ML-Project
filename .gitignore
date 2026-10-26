@@ -1,0 +1,19 @@
+# Local Python environments and caches
+.venv/
+.venv-jubail/
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.matplotlib/
+.ipynb_checkpoints/
+.DS_Store
+
+# Generated active-project artifacts
+/results/
+/logs/
+/deliverables/
+*.pt
+
+# Private local notes
+/CHESS_COM_EMAIL_DRAFT.md
+/POC_REPORT.md

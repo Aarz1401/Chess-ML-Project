@@ -1,7 +1,7 @@
 #!/bin/bash
 # One-command launcher for Jubail (NYUAD HPC).
 #
-# First time only, on a login node from the Aadil-Chess-Stylometry directory:
+# First time only, on a login node from the repository root:
 #     module load python/3.11        # or: module load python
 #     python3 -m venv .venv-jubail
 #     source .venv-jubail/bin/activate
