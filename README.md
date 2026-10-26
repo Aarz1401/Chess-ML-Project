@@ -7,6 +7,21 @@ This is the active project in the
 [Chess-ML-Project GitHub repository](https://github.com/Aarz1401/Chess-ML-Project).
 Start here and run commands from this directory.
 
+## Game Atlas website
+
+Explore 240 real games on an interactive map, replay their moves, and retrieve
+similar games. The default map uses 288-dimensional, target-relative strategic fingerprints;
+the original 12-statistic baseline is available for comparison. Both are
+engineered representations, separate from the neural model.
+
+```bash
+python3 -m http.server 8765 --directory website/dist
+```
+
+Open <http://localhost:8765>. See [website setup and methodology](website/README.md).
+For the interview explanation, read [how Game Atlas works](docs/game-atlas-interview.md).
+The new website code is MIT licensed; the existing PGN data is not relicensed.
+
 ## Layout
 
 ```text
@@ -15,6 +30,7 @@ scripts/                     Training, evaluation, visualization, Jubail jobs
 data/pgn/                    Eight player PGN files (versioned)
 notebooks/                   Explore saved results
 docs/                        Workflow, repository audit, Jubail guidance
+website/                     Game Atlas website and dataset export scripts
 archive/chess-style-fingerprint/
                              Earlier human-vs-Stockfish research
 results/                     Local checkpoints and generated reports (ignored)

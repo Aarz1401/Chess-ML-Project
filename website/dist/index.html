@@ -1,0 +1,269 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta
+      name="description"
+      content="Explore the shape of chess. An open-source atlas of real games, playable move by move, with transparent similarity search."
+    />
+    <meta name="theme-color" content="#f5f4ed" />
+    <title>Game Atlas — Explore the shape of chess</title>
+    <link
+      rel="icon"
+      href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='16' fill='%232a4037'/%3E%3Ctext x='8' y='50' font-size='52' fill='%23f5f4ed'%3E♞%3C/text%3E%3C/svg%3E"
+    />
+    <link rel="stylesheet" href="styles.css" />
+    <script defer src="app.js"></script>
+  </head>
+  <body>
+    <aside class="sidebar">
+      <a class="brand" href="#" aria-label="Game Atlas home"
+        ><span class="brand-mark">♞</span
+        ><span
+          >game atlas<span class="brand-sub">A FIELD GUIDE TO CHESS</span></span
+        ></a
+      >
+      <div class="side-rule"></div>
+      <div class="nav-active">
+        <span>◎</span> Explore the atlas <span class="tiny">01</span>
+      </div>
+      <button class="nav-link" id="about-side">
+        <span>⌁</span> How it works
+      </button>
+      <div class="side-section">
+        <div class="section-label">
+          REFERENCE PLAYERS <button id="reset-players">Reset</button>
+        </div>
+        <div id="players" aria-label="Filter reference players"></div>
+      </div>
+      <div class="side-note">
+        <span class="live-dot"></span> An open research project
+        <p>
+          Real games. Inspectable features.<br />A little curiosity goes a long
+          way.
+        </p>
+      </div>
+      <a
+        class="github-link"
+        href="https://github.com/Aarz1401/Chess-ML-Project"
+        target="_blank"
+        rel="noreferrer"
+        >Source on GitHub <span>↗</span></a
+      >
+    </aside>
+    <main>
+      <header class="topbar">
+        <span>THE CHESS COLLECTION <span class="divider">/</span> EXPLORER</span
+        ><button id="about-top">About this atlas <span>↗</span></button>
+      </header>
+      <section class="intro">
+        <div>
+          <div class="eyebrow">
+            <span></span> DIFFERENT PLAYERS. SHARED PATTERNS.
+          </div>
+          <h1>Every game has a shape.</h1>
+          <p>
+            Wander through chess history. Find familiar patterns.<br
+              class="desktop-br"
+            />
+            Discover your next game to study.
+          </p>
+        </div>
+        <button class="primary" id="random">Surprise me <span>↗</span></button>
+      </section>
+      <div class="workspace">
+        <section class="atlas-panel" aria-labelledby="atlas-title">
+          <div class="panel-heading">
+            <div>
+              <h2 id="atlas-title">
+                The game landscape <span class="pill">STRATEGIC ATLAS</span>
+              </h2>
+              <p>One dot, one game. Select a point to explore.</p>
+            </div>
+            <span class="count"
+              ><strong id="visible-count">—</strong> games</span
+            >
+          </div>
+          <div class="representation-row">
+            <label for="representation">Representation</label
+            ><select id="representation">
+              <option value="strategic">
+                Strategic fingerprint · 288 dimensions
+              </option>
+              <option value="baseline">Simple baseline · 12 dimensions</option>
+            </select>
+          </div>
+          <div class="toolbar">
+            <label class="search"
+              ><span aria-hidden="true">⌕</span
+              ><input
+                id="search"
+                type="search"
+                placeholder="Search player, event, opening…"
+                aria-label="Search games" /></label
+            ><label class="select-label"
+              ><span>Result</span
+              ><select id="result">
+                <option value="all">All results</option>
+                <option value="1-0">White wins</option>
+                <option value="0-1">Black wins</option>
+                <option value="1/2-1/2">Draws</option>
+              </select></label
+            >
+          </div>
+          <div class="map-wrap" id="map-wrap">
+            <div class="map-caption">
+              <span class="live-dot"></span>
+              <span id="map-status">Loading the collection…</span>
+            </div>
+            <svg
+              id="map"
+              viewBox="0 0 800 570"
+              role="group"
+              aria-label="Interactive chess game map"
+            ></svg>
+            <div class="empty" id="empty" hidden>
+              No games match these filters.<button id="clear">
+                Clear filters
+              </button>
+            </div>
+            <div id="tooltip" class="tooltip" hidden></div>
+            <div class="map-controls">
+              <button id="zoom-out" aria-label="Zoom out">−</button
+              ><button id="reset-view" aria-label="Reset map view">⤢</button
+              ><button id="zoom-in" aria-label="Zoom in">+</button>
+            </div>
+            <span class="axis-label">t-SNE →</span
+            ><span class="map-tip">Scroll to zoom · Drag to pan</span>
+          </div>
+          <div class="map-footer">
+            <span><i></i> Color identifies the reference player</span
+            ><button id="method">What does distance mean? ↗</button>
+          </div>
+          <div class="similar-section">
+            <div class="similar-heading">
+              <h3>In the same neighborhood</h3>
+              <span>Nearest in strategic feature space</span>
+            </div>
+            <div id="neighbors" class="neighbors"></div>
+            <p class="subtle">
+              Similarity compares game patterns, not playing strength. The 2D
+              map is an approximation.
+            </p>
+          </div>
+        </section>
+        <aside class="detail-panel" aria-label="Selected game">
+          <div class="detail-top">
+            <span class="section-label">UNDER THE MICROSCOPE</span
+            ><span id="game-number">—</span>
+          </div>
+          <div class="player-match">
+            <div>
+              <span class="side-token white-token"></span>
+              <h2 id="white-name">Loading games…</h2>
+            </div>
+            <div>
+              <span class="side-token black-token"></span>
+              <h2 id="black-name">Please wait</h2>
+            </div>
+          </div>
+          <p class="game-meta" id="game-meta"></p>
+          <div class="game-badges">
+            <span id="game-result" class="badge"></span
+            ><span id="game-eco" class="badge"></span
+            ><span id="game-length" class="badge"></span>
+          </div>
+          <div class="board-wrap">
+            <div
+              id="board"
+              class="board"
+              role="img"
+              aria-label="Chess position"
+            ></div>
+          </div>
+          <div class="replay-controls">
+            <button id="first" aria-label="Starting position">|‹</button
+            ><button id="prev" aria-label="Previous move">‹</button
+            ><span id="move-label" aria-live="polite">Starting position</span
+            ><button id="next" aria-label="Next move">›</button
+            ><button id="last" aria-label="Final position">›|</button>
+          </div>
+          <input
+            id="move-slider"
+            class="move-slider"
+            type="range"
+            min="0"
+            max="1"
+            value="0"
+            aria-label="Move in selected game"
+          />
+          <div id="move-list" class="move-list" aria-label="Game moves"></div>
+          <div class="fingerprint">
+            <div class="section-label">TARGET-PLAYER PATTERNS</div>
+            <div id="features"></div>
+          </div>
+          <div class="detail-actions">
+            <button id="download">Download PGN ↓</button
+            ><button id="share">Copy game link ↗</button>
+          </div>
+        </aside>
+      </div>
+      <footer class="page-footer">
+        <span
+          >GAME ATLAS <span class="dot-separator">·</span> Built for the curious
+          chess mind.</span
+        ><span id="dataset-note">A reproducible, open-source experiment.</span>
+      </footer>
+      <div
+        id="announcement"
+        class="sr-only"
+        role="status"
+        aria-live="polite"
+      ></div>
+    </main>
+    <dialog id="about">
+      <button id="close-about" class="close" aria-label="Close explanation">
+        ×
+      </button>
+      <div class="eyebrow">THE MAP IS NOT THE TERRITORY</div>
+      <h2>A way to explore.<br />Not a verdict on style.</h2>
+      <p>
+        The strategic map describes the
+        <strong>target player’s positions and decisions</strong>, starting after
+        12 opening plies and ending at ply 120. It pools three chronological
+        segments of each game.
+      </p>
+      <p>
+        Its 288 dimensions cover piece placement, pawn structure, mobility and
+        control, king safety, material balance, and move choices. Features are
+        standardized, clipped, weighted by block, and normalized. Names and
+        results are never inputs.
+      </p>
+      <p>
+        We use PCA followed by <strong>t-SNE</strong> to draw the map.
+        Recommendations use distance in the full fingerprint space, not distance
+        on your screen. Cluster sizes and gaps in a t-SNE map are not reliable
+        measures of strategic differences.
+      </p>
+      <div class="method-stat" id="variance"></div>
+      <p>
+        The selector also exposes the original 12-statistic PCA baseline.
+        Neither representation is a trained neural model. The strategic
+        fingerprint has more chess information, but its ability to capture style
+        still needs evaluation.
+      </p>
+      <p>
+        Player colors identify the source collection and target perspective. A
+        shared game appears once. The collection is a deterministic sample of
+        real PGNs; no account or server-side processing is needed.
+      </p>
+      <a
+        href="https://github.com/Aarz1401/Chess-ML-Project"
+        target="_blank"
+        rel="noreferrer"
+        >Explore the code and methodology ↗</a
+      >
+    </dialog>
+  </body>
+</html>
