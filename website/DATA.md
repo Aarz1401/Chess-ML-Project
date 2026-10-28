@@ -3,8 +3,8 @@
 The bundled `dist/atlas.json` is generated from the eight `data/pgn/*.pgn`
 files already versioned in this repository. The source revision before this
 website was added is `d356d84`. Game headers, moves, and results are preserved;
-comments and side variations are omitted. There are 30 sampled games per
-collection and 240 unique games in total.
+comments and side variations are omitted. The current atlas displays 1,000 unique games, drawn from the grouped corpus.
+See the public corpus manifest and experiment report in dist/.
 
 The original download URLs and collection-specific redistribution terms were
 not recorded in the repository. This document does not assert an open data

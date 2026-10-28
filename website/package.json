@@ -1,0 +1,14 @@
+{
+  "name": "chess-game-atlas",
+  "private": true,
+  "version": "0.2.0",
+  "description": "Static chess atlas; Node is needed only for development tests.",
+  "scripts": {
+    "test": "node ../tests/check_atlas_ui.cjs",
+    "check": "node --check dist/app.js"
+  },
+  "devDependencies": {
+    "jsdom": "26.1.0"
+  },
+  "license": "MIT"
+}

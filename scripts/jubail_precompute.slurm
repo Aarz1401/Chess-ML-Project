@@ -14,11 +14,16 @@
 
 set -euo pipefail
 cd "${SLURM_SUBMIT_DIR}"
+: "${SCRATCH:?SCRATCH must be set}"
+case "$(pwd -P)/" in
+  "$(realpath "$SCRATCH")/"*) ;;
+  *) echo "Submit from a scratch checkout"; exit 1 ;;
+esac
 mkdir -p logs
 
 module purge || true
 # Jubail: `module avail python` to see exact names; adjust if needed.
-module load python/3.11 2>/dev/null || module load python 2>/dev/null || true
+module load "${PYTHON_MODULE:-python/3.11.3}"
 
 if [ -d ".venv-jubail" ]; then
   source .venv-jubail/bin/activate

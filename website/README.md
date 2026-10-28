@@ -1,128 +1,94 @@
-# Game Atlas
+# Game Atlas website
 
-A static, open-source chess game explorer. Browse 240 real games from eight
-player collections, replay every move, and retrieve nearby games.
+A static explorer of 1,000 real games with five representation modes, lazy board
+replays, different-ECO neighbors, feature overlays, and measured Jubail results.
 
-## Run locally
+## Serve and test
 
 From the repository root:
 
-```bash
+~~~bash
 python3 -m http.server 8765 --directory website/dist
-```
+~~~
 
-Open <http://localhost:8765>. There is no Node build, backend, account, database,
-or API key. The bundled JSON supports search, filtering, board replay, PGN
-export, and shareable game links entirely in the browser. Google Fonts is an
-optional external font request; system fonts are used if it is unavailable.
+Open <http://localhost:8765>. Production needs no Node runtime, API key, account
+database or model server. Node is only a development-test dependency:
 
-## Rebuild the collection
-
-Use the root Python environment with the project requirements installed:
-
-```bash
-.venv/bin/python website/scripts/build_atlas.py
+~~~bash
+npm ci --prefix website --ignore-scripts
+npm test --prefix website
 .venv/bin/python website/scripts/validate_atlas.py
-node --check website/dist/app.js
-```
+.venv/bin/python -m unittest discover -s tests -v
+~~~
 
-The deterministic seed is 42, with 30 unique games per PGN collection. Games
-are deduplicated using the starting FEN and move sequence. A game shared by
-multiple source collections is assigned to the first collection sampled.
-Invalid games and games shorter than 20 plies are skipped. This sample is a
-browsing collection, not a train/test benchmark or an unbiased player census.
+The DOM tests exercise loading, replay, filtering, representation switching,
+sharing, PGN downloads and measured-report rendering. They do not replace
+browser layout or accessibility testing. Native browser QA was unavailable in
+the implementation session.
 
-## Understand the implementation
+## Representations
 
-The default representation is a **288-dimensional strategic fingerprint**:
-96 features, averaged over three chronological segments of the target player's
-post-opening positions and decisions. It skips 12 plies and stops at ply 120.
-The segments are equal portions of the observed sequence; they are not labels
-for opening, middlegame, or endgame.
+- Simple baseline: 12 whole-game statistics.
+- Strategic fingerprint: 288 target-relative, phase-aware engineered features.
+- Frozen Maia + moves: 128D, train-only pooling/reduction of pretrained features.
+- Learned temporal: 128D, small game encoder with paired-view/concept objectives.
+- Player-supervised control: 128D, explicitly trained for player identity.
 
-| Feature block | Dimensions per segment | Weight | What it captures |
-| --- | ---: | ---: | --- |
-| Piece placement | 48 | 1.0 | Six piece types across eight target-relative board regions |
-| Pawn structure | 16 | 1.5 | File occupancy, doubled/isolated/passed/connected pawns, islands and advancement |
-| Activity | 12 | 1.25 | Center control, mobility, defended pieces and opponent-half control |
-| King safety | 7 | 1.0 | King position, pawn shield, attacked/defended king zone and castling rights |
-| Material | 6 | 0.5 | Material balance and remaining material |
-| Decisions | 7 | 1.0 | Captures, checks, pawn moves, castling, destination and movement |
+The default joint model was selected by validation loss among three seeds.
+Player retrieval has not demonstrated a reliable gain over the strategic
+baseline. See [all measured results](../docs/atlas-results-2026-10-28.md), including
+the paired confidence interval and metadata-confound check.
 
-`game_vectors.py` contains the chess representation. Black's ranks are mirrored
-so advancement has the same meaning for either color; kingside/queenside file
-identity is preserved. A color/rank-symmetry check verifies this transformation.
+The map uses shared PCA/t-SNE settings. Neighbors use Euclidean distance in the
+selected full vector space. Neural vectors are unit-normalized, so cosine gives
+the same ranking. The different-ECO checkbox excludes exact code matches; it
+does not eliminate all opening similarity.
 
-Features are standardized across the sampled collection, clipped to [-3, 3],
-then scaled by `sqrt(block_weight / dimensions_in_block)`. This distributes a
-block's weight across its dimensions. Vectors are L2-normalized. Recommendations
-use exact Euclidean distance in this space; for normalized vectors this gives
-the same ranking as cosine similarity. The explicit weights are design choices,
-not learned or validated optimal weights.
+Color overlays show collection, ECO family, king exposure or pawn advancement.
+The chess-feature overlays are observable summaries, not causal explanations
+of a neural match.
 
-PCA reduces to 30 dimensions, then seeded t-SNE produces the 2D display.
-Recommendations always use the full fingerprint. The UI reports local neighbor
-preservation because the map is lossy. Cluster area and gap size are not
-reliable similarity measures. Smaller distance means closer under the selected
-representation; it is not a probability or calibrated style score.
+## Data delivery
 
-The original **12-statistic baseline** remains selectable. It summarizes both
-sides' whole-game move frequencies, length, captures, checks, castling, final
-material and early queen activity, and displays them with PCA. It is useful
-for comparing the effect of representation changes.
+dist/atlas.json contains the map, vectors, metadata and feature summaries.
+dist/replays/ contains chunks of 25 games with SAN moves, FENs and PGN text.
+A replay chunk loads on selection and is cached in the browser session.
 
-Names select the target side and label the game; names, dates, results and ECO
-codes do not enter either vector. Features may still reflect openings, era,
-strength, and opponents. “Closest blocks” lists the two blocks with the smallest
-weighted-space differences after dividing out their explicit block weights;
-it helps inspection but does not establish strategic equivalence.
+dist/experiments.json is the measured grouped audit.
+dist/corpus-manifest.json records source hashes, counts, missing metadata and
+split sizes. The source has no time-control headers; no matched-time-control
+claim is made. Browser neighbors are searched within the displayed/filter-
+selected cohort, not the larger benchmark reference index.
 
-## Measured projection quality
+The older 240 links are preserved where their game/perspective survived the
+validity filter. Selected games disclose train/validation/test membership.
+Additional displayed games are sampled from test groups.
 
-For the bundled 240-game collection, seed 42:
+## Rebuild the actual neural atlas
 
-| Map | Average retention of the 10 nearest neighbors |
-| --- | ---: |
-| Strategic fingerprint + t-SNE | 40.0% |
-| Simple baseline + PCA | 27.6% |
+Use the repository checkout and the [Jubail runbook](../docs/atlas-jubail-runbook.md).
+The scripts preserve canonical IDs through corpus preparation, extraction,
+training, evaluation and export. No upstream model weights are bundled in dist.
 
-Strategic t-SNE trustworthiness at k=10 is 0.883. These numbers concern how well
-each projection displays its own vector distances. They do **not** compare the
-chess usefulness of the two representations. Both the features and projection
-changed, so the difference cannot be attributed to either one alone.
+For the original handcrafted-only experiment, the earlier generator remains:
 
-Validation replays all games legally, reconstructs both vector pipelines,
-checks unique game identities, finite coordinates, and color symmetry.
+~~~bash
+.venv/bin/python website/scripts/build_atlas.py
+~~~
 
-## Neural embeddings next
+This replaces atlas.json with the older feature-only schema. Use a backup or
+separate output path when comparing it with the neural export.
 
-These are engineered, interpretable fingerprints. The existing CNN/Transformer
-can supply a third representation once trained and evaluated for the atlas's
-similarity task. Its original same-player objective does not automatically
-make games with similar strategic content neighbors.
+## Hosting and licensing
 
-Keep the same game IDs when exporting neural embeddings. Evaluate retrieval
-with held-out game groups, matched openings and an explicit similarity rubric.
-A reproducible comparison should use the same projection settings for each
-representation and separately score human judgments of the nearest games.
-Do not claim learned strategic similarity based only on visually distinct
-clusters or same-player retrieval.
+dist/ works on a static web host. URL fragments identify selected games.
+.openai/hosting.json records the existing private Sites preview identity;
+self-hosters should create their own hosting configuration.
 
-## Deployment
+The newly added website software is MIT licensed; see LICENSE. That license
+excludes PGN-derived data, replay chunks, third-party fonts, pretrained models
+and pre-existing repository code. Original PGN collection download URLs and
+redistribution terms are not documented; see DATA.md. Maia-3 is a separately
+licensed upstream dependency with pinned source and checkpoint revisions.
 
-`dist/` can be hosted by any static web host. No routing rewrites are needed:
-selected games use URL fragments. `.openai/hosting.json` records the private
-Sites preview identity; self-hosters do not need it and should create their own
-hosting configuration. Hosting metadata is not a credential.
-
-## Contributing and licensing
-
-The code newly added under `website/` is MIT licensed; see `LICENSE`.
-The bundled `dist/atlas.json` is derived from existing repository PGNs and is
-excluded from that software license. Original collection download URLs and
-redistribution terms were not documented in the source repository. Track those
-in `DATA.md` before describing the dataset itself as openly licensed.
-The software license does not relicense the pre-existing project or its data.
-
-Useful first contributions: neural export integration, better game sampling,
-opening labels, annotated feature comparisons, and dataset provenance.
+Google Fonts is an optional external font request; system fonts are the fallback.

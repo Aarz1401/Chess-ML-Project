@@ -1,0 +1,1347 @@
+{
+  "schema_version": 1,
+  "corpus_id": "c39156a8008b5723c32473d6970567c5f9bb556adf025e3cfe583b05d8db75cd",
+  "samples": 36234,
+  "unique_games": 34740,
+  "split_samples": {
+    "train": 29064,
+    "test": 3622,
+    "val": 3548
+  },
+  "reference_samples": 2400,
+  "query_samples": 1268,
+  "metadata_sha256": "1b1d00eb9885865b843eaefba1381c4da6baa0eec534167baeb699a0c25f47a8",
+  "benchmark": {
+    "kind": "fresh_grouped_audit",
+    "excluded_exploratory_queries": 1600,
+    "excluded_exploratory_game_groups": 1576,
+    "audit_game_groups": 1249
+  },
+  "modern_cohort": {
+    "years": [
+      2015,
+      2026
+    ],
+    "both_rating_range": [
+      2400,
+      3000
+    ],
+    "reference_samples": 2100,
+    "query_samples": 1042,
+    "players": [
+      "Anand",
+      "Carlsen",
+      "Caruana",
+      "Duda",
+      "Erigaisi",
+      "Firouzja",
+      "Praggnanandhaa"
+    ]
+  },
+  "extraction": {
+    "schema_version": 1,
+    "corpus_id": "c39156a8008b5723c32473d6970567c5f9bb556adf025e3cfe583b05d8db75cd",
+    "model": {
+      "repo": "UofTCSSLab/Maia3-5M",
+      "revision": "b6559de2398d7140b985f28fd2c19fb5e47ddabe",
+      "checkpoint_sha256": "ba14208b2992d85502f5fb501934abf6aaaeb355e9f3fdf90e326911f562524f",
+      "code_revision": "1e13597c42d4858b7cfd7cfdae01e297263364b2"
+    },
+    "fixed_elo": 2000,
+    "dimensions": 768,
+    "decisions": 24,
+    "samples": 36234,
+    "positions": 836664,
+    "inference_seconds": 46.09623743034899,
+    "positions_per_second": 18150.375098709344,
+    "device": "cuda",
+    "gpu": "Tesla V100-PCIE-32GB",
+    "amp_dtype": "torch.float16",
+    "peak_gpu_mib": 252.7236328125,
+    "pca_variance": 0.5525280237197876,
+    "position_pca_variance": 0.7203134298324585,
+    "metadata_sha256": "1b1d00eb9885865b843eaefba1381c4da6baa0eec534167baeb699a0c25f47a8",
+    "feature_names": [
+      "early: pawn placement rank0 file0",
+      "early: pawn placement rank0 file1",
+      "early: pawn placement rank1 file0",
+      "early: pawn placement rank1 file1",
+      "early: pawn placement rank2 file0",
+      "early: pawn placement rank2 file1",
+      "early: pawn placement rank3 file0",
+      "early: pawn placement rank3 file1",
+      "early: knight placement rank0 file0",
+      "early: knight placement rank0 file1",
+      "early: knight placement rank1 file0",
+      "early: knight placement rank1 file1",
+      "early: knight placement rank2 file0",
+      "early: knight placement rank2 file1",
+      "early: knight placement rank3 file0",
+      "early: knight placement rank3 file1",
+      "early: bishop placement rank0 file0",
+      "early: bishop placement rank0 file1",
+      "early: bishop placement rank1 file0",
+      "early: bishop placement rank1 file1",
+      "early: bishop placement rank2 file0",
+      "early: bishop placement rank2 file1",
+      "early: bishop placement rank3 file0",
+      "early: bishop placement rank3 file1",
+      "early: rook placement rank0 file0",
+      "early: rook placement rank0 file1",
+      "early: rook placement rank1 file0",
+      "early: rook placement rank1 file1",
+      "early: rook placement rank2 file0",
+      "early: rook placement rank2 file1",
+      "early: rook placement rank3 file0",
+      "early: rook placement rank3 file1",
+      "early: queen placement rank0 file0",
+      "early: queen placement rank0 file1",
+      "early: queen placement rank1 file0",
+      "early: queen placement rank1 file1",
+      "early: queen placement rank2 file0",
+      "early: queen placement rank2 file1",
+      "early: queen placement rank3 file0",
+      "early: queen placement rank3 file1",
+      "early: king placement rank0 file0",
+      "early: king placement rank0 file1",
+      "early: king placement rank1 file0",
+      "early: king placement rank1 file1",
+      "early: king placement rank2 file0",
+      "early: king placement rank2 file1",
+      "early: king placement rank3 file0",
+      "early: king placement rank3 file1",
+      "early: pawns on a file",
+      "early: pawns on b file",
+      "early: pawns on c file",
+      "early: pawns on d file",
+      "early: pawns on e file",
+      "early: pawns on f file",
+      "early: pawns on g file",
+      "early: pawns on h file",
+      "early: doubled pawns",
+      "early: isolated pawns",
+      "early: passed pawns",
+      "early: connected pawns",
+      "early: pawn islands",
+      "early: pawn advancement",
+      "early: central pawns",
+      "early: pawn count",
+      "early: center control",
+      "early: opponent half control",
+      "early: board control",
+      "early: undefended pieces",
+      "early: pawn mobility",
+      "early: knight mobility",
+      "early: bishop mobility",
+      "early: rook mobility",
+      "early: queen mobility",
+      "early: king mobility",
+      "early: attacked enemy pieces",
+      "early: bishop pair",
+      "early: king advancement",
+      "early: king centrality",
+      "early: pawn shield",
+      "early: king zone attacked",
+      "early: king zone defended",
+      "early: king file open",
+      "early: castling rights",
+      "early: pawn balance",
+      "early: knight balance",
+      "early: bishop balance",
+      "early: rook balance",
+      "early: queen balance",
+      "early: remaining material",
+      "early: capture rate",
+      "early: check rate",
+      "early: pawn move rate",
+      "early: castling rate",
+      "early: central file destination",
+      "early: forward movement",
+      "early: move distance",
+      "middle: pawn placement rank0 file0",
+      "middle: pawn placement rank0 file1",
+      "middle: pawn placement rank1 file0",
+      "middle: pawn placement rank1 file1",
+      "middle: pawn placement rank2 file0",
+      "middle: pawn placement rank2 file1",
+      "middle: pawn placement rank3 file0",
+      "middle: pawn placement rank3 file1",
+      "middle: knight placement rank0 file0",
+      "middle: knight placement rank0 file1",
+      "middle: knight placement rank1 file0",
+      "middle: knight placement rank1 file1",
+      "middle: knight placement rank2 file0",
+      "middle: knight placement rank2 file1",
+      "middle: knight placement rank3 file0",
+      "middle: knight placement rank3 file1",
+      "middle: bishop placement rank0 file0",
+      "middle: bishop placement rank0 file1",
+      "middle: bishop placement rank1 file0",
+      "middle: bishop placement rank1 file1",
+      "middle: bishop placement rank2 file0",
+      "middle: bishop placement rank2 file1",
+      "middle: bishop placement rank3 file0",
+      "middle: bishop placement rank3 file1",
+      "middle: rook placement rank0 file0",
+      "middle: rook placement rank0 file1",
+      "middle: rook placement rank1 file0",
+      "middle: rook placement rank1 file1",
+      "middle: rook placement rank2 file0",
+      "middle: rook placement rank2 file1",
+      "middle: rook placement rank3 file0",
+      "middle: rook placement rank3 file1",
+      "middle: queen placement rank0 file0",
+      "middle: queen placement rank0 file1",
+      "middle: queen placement rank1 file0",
+      "middle: queen placement rank1 file1",
+      "middle: queen placement rank2 file0",
+      "middle: queen placement rank2 file1",
+      "middle: queen placement rank3 file0",
+      "middle: queen placement rank3 file1",
+      "middle: king placement rank0 file0",
+      "middle: king placement rank0 file1",
+      "middle: king placement rank1 file0",
+      "middle: king placement rank1 file1",
+      "middle: king placement rank2 file0",
+      "middle: king placement rank2 file1",
+      "middle: king placement rank3 file0",
+      "middle: king placement rank3 file1",
+      "middle: pawns on a file",
+      "middle: pawns on b file",
+      "middle: pawns on c file",
+      "middle: pawns on d file",
+      "middle: pawns on e file",
+      "middle: pawns on f file",
+      "middle: pawns on g file",
+      "middle: pawns on h file",
+      "middle: doubled pawns",
+      "middle: isolated pawns",
+      "middle: passed pawns",
+      "middle: connected pawns",
+      "middle: pawn islands",
+      "middle: pawn advancement",
+      "middle: central pawns",
+      "middle: pawn count",
+      "middle: center control",
+      "middle: opponent half control",
+      "middle: board control",
+      "middle: undefended pieces",
+      "middle: pawn mobility",
+      "middle: knight mobility",
+      "middle: bishop mobility",
+      "middle: rook mobility",
+      "middle: queen mobility",
+      "middle: king mobility",
+      "middle: attacked enemy pieces",
+      "middle: bishop pair",
+      "middle: king advancement",
+      "middle: king centrality",
+      "middle: pawn shield",
+      "middle: king zone attacked",
+      "middle: king zone defended",
+      "middle: king file open",
+      "middle: castling rights",
+      "middle: pawn balance",
+      "middle: knight balance",
+      "middle: bishop balance",
+      "middle: rook balance",
+      "middle: queen balance",
+      "middle: remaining material",
+      "middle: capture rate",
+      "middle: check rate",
+      "middle: pawn move rate",
+      "middle: castling rate",
+      "middle: central file destination",
+      "middle: forward movement",
+      "middle: move distance",
+      "late: pawn placement rank0 file0",
+      "late: pawn placement rank0 file1",
+      "late: pawn placement rank1 file0",
+      "late: pawn placement rank1 file1",
+      "late: pawn placement rank2 file0",
+      "late: pawn placement rank2 file1",
+      "late: pawn placement rank3 file0",
+      "late: pawn placement rank3 file1",
+      "late: knight placement rank0 file0",
+      "late: knight placement rank0 file1",
+      "late: knight placement rank1 file0",
+      "late: knight placement rank1 file1",
+      "late: knight placement rank2 file0",
+      "late: knight placement rank2 file1",
+      "late: knight placement rank3 file0",
+      "late: knight placement rank3 file1",
+      "late: bishop placement rank0 file0",
+      "late: bishop placement rank0 file1",
+      "late: bishop placement rank1 file0",
+      "late: bishop placement rank1 file1",
+      "late: bishop placement rank2 file0",
+      "late: bishop placement rank2 file1",
+      "late: bishop placement rank3 file0",
+      "late: bishop placement rank3 file1",
+      "late: rook placement rank0 file0",
+      "late: rook placement rank0 file1",
+      "late: rook placement rank1 file0",
+      "late: rook placement rank1 file1",
+      "late: rook placement rank2 file0",
+      "late: rook placement rank2 file1",
+      "late: rook placement rank3 file0",
+      "late: rook placement rank3 file1",
+      "late: queen placement rank0 file0",
+      "late: queen placement rank0 file1",
+      "late: queen placement rank1 file0",
+      "late: queen placement rank1 file1",
+      "late: queen placement rank2 file0",
+      "late: queen placement rank2 file1",
+      "late: queen placement rank3 file0",
+      "late: queen placement rank3 file1",
+      "late: king placement rank0 file0",
+      "late: king placement rank0 file1",
+      "late: king placement rank1 file0",
+      "late: king placement rank1 file1",
+      "late: king placement rank2 file0",
+      "late: king placement rank2 file1",
+      "late: king placement rank3 file0",
+      "late: king placement rank3 file1",
+      "late: pawns on a file",
+      "late: pawns on b file",
+      "late: pawns on c file",
+      "late: pawns on d file",
+      "late: pawns on e file",
+      "late: pawns on f file",
+      "late: pawns on g file",
+      "late: pawns on h file",
+      "late: doubled pawns",
+      "late: isolated pawns",
+      "late: passed pawns",
+      "late: connected pawns",
+      "late: pawn islands",
+      "late: pawn advancement",
+      "late: central pawns",
+      "late: pawn count",
+      "late: center control",
+      "late: opponent half control",
+      "late: board control",
+      "late: undefended pieces",
+      "late: pawn mobility",
+      "late: knight mobility",
+      "late: bishop mobility",
+      "late: rook mobility",
+      "late: queen mobility",
+      "late: king mobility",
+      "late: attacked enemy pieces",
+      "late: bishop pair",
+      "late: king advancement",
+      "late: king centrality",
+      "late: pawn shield",
+      "late: king zone attacked",
+      "late: king zone defended",
+      "late: king file open",
+      "late: castling rights",
+      "late: pawn balance",
+      "late: knight balance",
+      "late: bishop balance",
+      "late: rook balance",
+      "late: queen balance",
+      "late: remaining material",
+      "late: capture rate",
+      "late: check rate",
+      "late: pawn move rate",
+      "late: castling rate",
+      "late: central file destination",
+      "late: forward movement",
+      "late: move distance"
+    ],
+    "feature_blocks": [
+      "placement",
+      "placement",
+      "placement",
+      "placement",
+      "placement",
+      "placement",
+      "placement",
+      "placement",
+      "placement",
+      "placement",
+      "placement",
+      "placement",
+      "placement",
+      "placement",
+      "placement",
+      "placement",
+      "placement",
+      "placement",
+      "placement",
+      "placement",
+      "placement",
+      "placement",
+      "placement",
+      "placement",
+      "placement",
+      "placement",
+      "placement",
+      "placement",
+      "placement",
+      "placement",
+      "placement",
+      "placement",
+      "placement",
+      "placement",
+      "placement",
+      "placement",
+      "placement",
+      "placement",
+      "placement",
+      "placement",
+      "placement",
+      "placement",
+      "placement",
+      "placement",
+      "placement",
+      "placement",
+      "placement",
+      "placement",
+      "pawns",
+      "pawns",
+      "pawns",
+      "pawns",
+      "pawns",
+      "pawns",
+      "pawns",
+      "pawns",
+      "pawns",
+      "pawns",
+      "pawns",
+      "pawns",
+      "pawns",
+      "pawns",
+      "pawns",
+      "pawns",
+      "activity",
+      "activity",
+      "activity",
+      "activity",
+      "activity",
+      "activity",
+      "activity",
+      "activity",
+      "activity",
+      "activity",
+      "activity",
+      "activity",
+      "king",
+      "king",
+      "king",
+      "king",
+      "king",
+      "king",
+      "king",
+      "material",
+      "material",
+      "material",
+      "material",
+      "material",
+      "material",
+      "decisions",
+      "decisions",
+      "decisions",
+      "decisions",
+      "decisions",
+      "decisions",
+      "decisions",
+      "placement",
+      "placement",
+      "placement",
+      "placement",
+      "placement",
+      "placement",
+      "placement",
+      "placement",
+      "placement",
+      "placement",
+      "placement",
+      "placement",
+      "placement",
+      "placement",
+      "placement",
+      "placement",
+      "placement",
+      "placement",
+      "placement",
+      "placement",
+      "placement",
+      "placement",
+      "placement",
+      "placement",
+      "placement",
+      "placement",
+      "placement",
+      "placement",
+      "placement",
+      "placement",
+      "placement",
+      "placement",
+      "placement",
+      "placement",
+      "placement",
+      "placement",
+      "placement",
+      "placement",
+      "placement",
+      "placement",
+      "placement",
+      "placement",
+      "placement",
+      "placement",
+      "placement",
+      "placement",
+      "placement",
+      "placement",
+      "pawns",
+      "pawns",
+      "pawns",
+      "pawns",
+      "pawns",
+      "pawns",
+      "pawns",
+      "pawns",
+      "pawns",
+      "pawns",
+      "pawns",
+      "pawns",
+      "pawns",
+      "pawns",
+      "pawns",
+      "pawns",
+      "activity",
+      "activity",
+      "activity",
+      "activity",
+      "activity",
+      "activity",
+      "activity",
+      "activity",
+      "activity",
+      "activity",
+      "activity",
+      "activity",
+      "king",
+      "king",
+      "king",
+      "king",
+      "king",
+      "king",
+      "king",
+      "material",
+      "material",
+      "material",
+      "material",
+      "material",
+      "material",
+      "decisions",
+      "decisions",
+      "decisions",
+      "decisions",
+      "decisions",
+      "decisions",
+      "decisions",
+      "placement",
+      "placement",
+      "placement",
+      "placement",
+      "placement",
+      "placement",
+      "placement",
+      "placement",
+      "placement",
+      "placement",
+      "placement",
+      "placement",
+      "placement",
+      "placement",
+      "placement",
+      "placement",
+      "placement",
+      "placement",
+      "placement",
+      "placement",
+      "placement",
+      "placement",
+      "placement",
+      "placement",
+      "placement",
+      "placement",
+      "placement",
+      "placement",
+      "placement",
+      "placement",
+      "placement",
+      "placement",
+      "placement",
+      "placement",
+      "placement",
+      "placement",
+      "placement",
+      "placement",
+      "placement",
+      "placement",
+      "placement",
+      "placement",
+      "placement",
+      "placement",
+      "placement",
+      "placement",
+      "placement",
+      "placement",
+      "pawns",
+      "pawns",
+      "pawns",
+      "pawns",
+      "pawns",
+      "pawns",
+      "pawns",
+      "pawns",
+      "pawns",
+      "pawns",
+      "pawns",
+      "pawns",
+      "pawns",
+      "pawns",
+      "pawns",
+      "pawns",
+      "activity",
+      "activity",
+      "activity",
+      "activity",
+      "activity",
+      "activity",
+      "activity",
+      "activity",
+      "activity",
+      "activity",
+      "activity",
+      "activity",
+      "king",
+      "king",
+      "king",
+      "king",
+      "king",
+      "king",
+      "king",
+      "material",
+      "material",
+      "material",
+      "material",
+      "material",
+      "material",
+      "decisions",
+      "decisions",
+      "decisions",
+      "decisions",
+      "decisions",
+      "decisions",
+      "decisions"
+    ]
+  },
+  "results": {
+    "strategic": {
+      "standard": {
+        "player_top1": 0.1474763406940063,
+        "player_top1_ci95": [
+          0.12928342674139312,
+          0.16714371497197755
+        ],
+        "player_hit5": 0.5260252365930599,
+        "random_player_top1": 0.125,
+        "same_eco_top1": 0.06945540647198106,
+        "queries": 1268,
+        "unique_query_games": 1249
+      },
+      "cross_eco": {
+        "player_top1": 0.13180741910023677,
+        "player_top1_ci95": [
+          0.11458333333333333,
+          0.14943910256410256
+        ],
+        "player_hit5": 0.5177584846093133,
+        "random_player_top1": 0.12469819875460865,
+        "same_eco_top1": 0.0,
+        "queries": 1267,
+        "unique_query_games": 1248
+      },
+      "modern_cross_eco": {
+        "player_top1": 0.14875239923224567,
+        "player_top1_ci95": [
+          0.12903940886699505,
+          0.17142857142857143
+        ],
+        "player_hit5": 0.5595009596928983,
+        "random_player_top1": 0.1425773896376256,
+        "same_eco_top1": 0.0,
+        "queries": 1042,
+        "unique_query_games": 1015
+      },
+      "dimensions": 288
+    },
+    "frozen_position": {
+      "standard": {
+        "player_top1": 0.14668769716088328,
+        "player_top1_ci95": [
+          0.12930344275420336,
+          0.16813450760608487
+        ],
+        "player_hit5": 0.5370662460567823,
+        "random_player_top1": 0.125,
+        "same_eco_top1": 0.056037884767166535,
+        "queries": 1268,
+        "unique_query_games": 1249
+      },
+      "cross_eco": {
+        "player_top1": 0.14127861089187055,
+        "player_top1_ci95": [
+          0.12356770833333333,
+          0.1622596153846154
+        ],
+        "player_hit5": 0.5288082083662194,
+        "random_player_top1": 0.12469819875460865,
+        "same_eco_top1": 0.0,
+        "queries": 1267,
+        "unique_query_games": 1248
+      },
+      "modern_cross_eco": {
+        "player_top1": 0.13339731285988485,
+        "player_top1_ci95": [
+          0.11402709359605911,
+          0.15467980295566502
+        ],
+        "player_hit5": 0.5239923224568138,
+        "random_player_top1": 0.1425773896376256,
+        "same_eco_top1": 0.0,
+        "queries": 1042,
+        "unique_query_games": 1015
+      },
+      "dimensions": 128
+    },
+    "frozen_decision": {
+      "standard": {
+        "player_top1": 0.14589905362776026,
+        "player_top1_ci95": [
+          0.126291032826261,
+          0.16573258606885508
+        ],
+        "player_hit5": 0.5134069400630915,
+        "random_player_top1": 0.125,
+        "same_eco_top1": 0.041831097079715863,
+        "queries": 1268,
+        "unique_query_games": 1249
+      },
+      "cross_eco": {
+        "player_top1": 0.13654301499605367,
+        "player_top1_ci95": [
+          0.11878004807692308,
+          0.15646033653846153
+        ],
+        "player_hit5": 0.5019731649565904,
+        "random_player_top1": 0.12469819875460865,
+        "same_eco_top1": 0.0,
+        "queries": 1267,
+        "unique_query_games": 1248
+      },
+      "modern_cross_eco": {
+        "player_top1": 0.14587332053742802,
+        "player_top1_ci95": [
+          0.12561576354679804,
+          0.16896551724137931
+        ],
+        "player_hit5": 0.5345489443378119,
+        "random_player_top1": 0.1425773896376256,
+        "same_eco_top1": 0.0,
+        "queries": 1042,
+        "unique_query_games": 1015
+      },
+      "dimensions": 128
+    },
+    "concept_42": {
+      "standard": {
+        "player_top1": 0.1277602523659306,
+        "player_top1_ci95": [
+          0.11067854283426741,
+          0.14531625300240192
+        ],
+        "player_hit5": 0.5094637223974764,
+        "random_player_top1": 0.125,
+        "same_eco_top1": 0.05288082083662194,
+        "queries": 1268,
+        "unique_query_games": 1249
+      },
+      "cross_eco": {
+        "player_top1": 0.11760063141278611,
+        "player_top1_ci95": [
+          0.10115184294871796,
+          0.13501602564102563
+        ],
+        "player_hit5": 0.49013417521704816,
+        "random_player_top1": 0.12469819875460865,
+        "same_eco_top1": 0.0,
+        "queries": 1267,
+        "unique_query_games": 1248
+      },
+      "modern_cross_eco": {
+        "player_top1": 0.15834932821497122,
+        "player_top1_ci95": [
+          0.137179802955665,
+          0.1832512315270936
+        ],
+        "player_hit5": 0.5710172744721689,
+        "random_player_top1": 0.1425773896376256,
+        "same_eco_top1": 0.0,
+        "queries": 1042,
+        "unique_query_games": 1015
+      },
+      "dimensions": 128
+    },
+    "joint_21": {
+      "standard": {
+        "player_top1": 0.1529968454258675,
+        "player_top1_ci95": [
+          0.13149519615692554,
+          0.1701561248999199
+        ],
+        "player_hit5": 0.527602523659306,
+        "random_player_top1": 0.125,
+        "same_eco_top1": 0.062352012628255724,
+        "queries": 1268,
+        "unique_query_games": 1249
+      },
+      "cross_eco": {
+        "player_top1": 0.14601420678768745,
+        "player_top1_ci95": [
+          0.12599158653846154,
+          0.16266025641025642
+        ],
+        "player_hit5": 0.5209155485398579,
+        "random_player_top1": 0.12469819875460865,
+        "same_eco_top1": 0.0,
+        "queries": 1267,
+        "unique_query_games": 1248
+      },
+      "modern_cross_eco": {
+        "player_top1": 0.15738963531669867,
+        "player_top1_ci95": [
+          0.13692118226600986,
+          0.1785837438423645
+        ],
+        "player_hit5": 0.5671785028790787,
+        "random_player_top1": 0.1425773896376256,
+        "same_eco_top1": 0.0,
+        "queries": 1042,
+        "unique_query_games": 1015
+      },
+      "dimensions": 128
+    },
+    "joint_42": {
+      "standard": {
+        "player_top1": 0.14195583596214512,
+        "player_top1_ci95": [
+          0.12249799839871897,
+          0.16054843875100078
+        ],
+        "player_hit5": 0.5165615141955836,
+        "random_player_top1": 0.125,
+        "same_eco_top1": 0.04419889502762431,
+        "queries": 1268,
+        "unique_query_games": 1249
+      },
+      "cross_eco": {
+        "player_top1": 0.13654301499605367,
+        "player_top1_ci95": [
+          0.11858974358974358,
+          0.15485777243589743
+        ],
+        "player_hit5": 0.5074980268350434,
+        "random_player_top1": 0.12469819875460865,
+        "same_eco_top1": 0.0,
+        "queries": 1267,
+        "unique_query_games": 1248
+      },
+      "modern_cross_eco": {
+        "player_top1": 0.1689059500959693,
+        "player_top1_ci95": [
+          0.1470320197044335,
+          0.1935960591133005
+        ],
+        "player_hit5": 0.5422264875239923,
+        "random_player_top1": 0.1425773896376256,
+        "same_eco_top1": 0.0,
+        "queries": 1042,
+        "unique_query_games": 1015
+      },
+      "dimensions": 128
+    },
+    "joint_7": {
+      "standard": {
+        "player_top1": 0.1411671924290221,
+        "player_top1_ci95": [
+          0.1242894315452362,
+          0.16314051240992794
+        ],
+        "player_hit5": 0.5212933753943217,
+        "random_player_top1": 0.125,
+        "same_eco_top1": 0.05288082083662194,
+        "queries": 1268,
+        "unique_query_games": 1249
+      },
+      "cross_eco": {
+        "player_top1": 0.13417521704814522,
+        "player_top1_ci95": [
+          0.11517427884615385,
+          0.1518429487179487
+        ],
+        "player_hit5": 0.5090765588003157,
+        "random_player_top1": 0.12469819875460865,
+        "same_eco_top1": 0.0,
+        "queries": 1267,
+        "unique_query_games": 1248
+      },
+      "modern_cross_eco": {
+        "player_top1": 0.15163147792706333,
+        "player_top1_ci95": [
+          0.129064039408867,
+          0.17044334975369457
+        ],
+        "player_hit5": 0.5585412667946257,
+        "random_player_top1": 0.1425773896376256,
+        "same_eco_top1": 0.0,
+        "queries": 1042,
+        "unique_query_games": 1015
+      },
+      "dimensions": 128
+    },
+    "player_42": {
+      "standard": {
+        "player_top1": 0.1608832807570978,
+        "player_top1_ci95": [
+          0.14211369095276222,
+          0.1835568454763811
+        ],
+        "player_hit5": 0.5481072555205048,
+        "random_player_top1": 0.125,
+        "same_eco_top1": 0.0702446724546172,
+        "queries": 1268,
+        "unique_query_games": 1249
+      },
+      "cross_eco": {
+        "player_top1": 0.164956590370955,
+        "player_top1_ci95": [
+          0.1422275641025641,
+          0.18469551282051283
+        ],
+        "player_hit5": 0.5430149960536701,
+        "random_player_top1": 0.12469819875460865,
+        "same_eco_top1": 0.0,
+        "queries": 1267,
+        "unique_query_games": 1248
+      },
+      "modern_cross_eco": {
+        "player_top1": 0.15642994241842612,
+        "player_top1_ci95": [
+          0.13816502463054187,
+          0.1807881773399015
+        ],
+        "player_hit5": 0.5547024952015355,
+        "random_player_top1": 0.1425773896376256,
+        "same_eco_top1": 0.0,
+        "queries": 1042,
+        "unique_query_games": 1015
+      },
+      "dimensions": 128
+    }
+  },
+  "training": {
+    "concept_42": {
+      "seed": 42,
+      "objective": "concept",
+      "cache_id": "c39156a8008b5723c32473d6970567c5f9bb556adf025e3cfe583b05d8db75cd",
+      "epochs": 12,
+      "best_epoch": 12,
+      "best_val_loss": 0.20319945354270827,
+      "parameters": 418976,
+      "training_seconds": 122.38195293024182,
+      "gpu": "Tesla V100-PCIE-32GB",
+      "peak_gpu_mib": 116.48681640625,
+      "samples": 36234,
+      "train_samples": 29064,
+      "val_samples": 3548,
+      "metadata_sha256": "1b1d00eb9885865b843eaefba1381c4da6baa0eec534167baeb699a0c25f47a8",
+      "config": {
+        "input_dim": 768,
+        "width": 128,
+        "embedding_dim": 128,
+        "target_dim": 288,
+        "layers": 2,
+        "dropout": 0.1
+      }
+    },
+    "joint_21": {
+      "seed": 21,
+      "objective": "joint",
+      "cache_id": "c39156a8008b5723c32473d6970567c5f9bb556adf025e3cfe583b05d8db75cd",
+      "epochs": 12,
+      "best_epoch": 12,
+      "best_val_loss": 0.22823885099998054,
+      "parameters": 418976,
+      "training_seconds": 151.40512220561504,
+      "gpu": "Tesla V100-PCIE-32GB",
+      "peak_gpu_mib": 115.921875,
+      "samples": 36234,
+      "train_samples": 29064,
+      "val_samples": 3548,
+      "metadata_sha256": "1b1d00eb9885865b843eaefba1381c4da6baa0eec534167baeb699a0c25f47a8",
+      "config": {
+        "input_dim": 768,
+        "width": 128,
+        "embedding_dim": 128,
+        "target_dim": 288,
+        "layers": 2,
+        "dropout": 0.1
+      }
+    },
+    "joint_42": {
+      "seed": 42,
+      "objective": "joint",
+      "cache_id": "c39156a8008b5723c32473d6970567c5f9bb556adf025e3cfe583b05d8db75cd",
+      "epochs": 12,
+      "best_epoch": 12,
+      "best_val_loss": 0.23185365767194024,
+      "parameters": 418976,
+      "training_seconds": 116.69492318294942,
+      "gpu": "Tesla V100-PCIE-32GB",
+      "peak_gpu_mib": 115.921875,
+      "samples": 36234,
+      "train_samples": 29064,
+      "val_samples": 3548,
+      "metadata_sha256": "1b1d00eb9885865b843eaefba1381c4da6baa0eec534167baeb699a0c25f47a8",
+      "config": {
+        "input_dim": 768,
+        "width": 128,
+        "embedding_dim": 128,
+        "target_dim": 288,
+        "layers": 2,
+        "dropout": 0.1
+      }
+    },
+    "joint_7": {
+      "seed": 7,
+      "objective": "joint",
+      "cache_id": "c39156a8008b5723c32473d6970567c5f9bb556adf025e3cfe583b05d8db75cd",
+      "epochs": 12,
+      "best_epoch": 12,
+      "best_val_loss": 0.2319563182056152,
+      "parameters": 418976,
+      "training_seconds": 125.72291675396264,
+      "gpu": "Tesla V100-PCIE-32GB",
+      "peak_gpu_mib": 115.921875,
+      "samples": 36234,
+      "train_samples": 29064,
+      "val_samples": 3548,
+      "metadata_sha256": "1b1d00eb9885865b843eaefba1381c4da6baa0eec534167baeb699a0c25f47a8",
+      "config": {
+        "input_dim": 768,
+        "width": 128,
+        "embedding_dim": 128,
+        "target_dim": 288,
+        "layers": 2,
+        "dropout": 0.1
+      }
+    },
+    "player_42": {
+      "seed": 42,
+      "objective": "player",
+      "cache_id": "c39156a8008b5723c32473d6970567c5f9bb556adf025e3cfe583b05d8db75cd",
+      "epochs": 12,
+      "best_epoch": 8,
+      "best_val_loss": 3.3713300357139095,
+      "parameters": 420008,
+      "training_seconds": 150.416054867208,
+      "gpu": "Tesla V100-PCIE-32GB",
+      "peak_gpu_mib": 116.03076171875,
+      "samples": 36234,
+      "train_samples": 29064,
+      "val_samples": 3548,
+      "metadata_sha256": "1b1d00eb9885865b843eaefba1381c4da6baa0eec534167baeb699a0c25f47a8",
+      "config": {
+        "input_dim": 768,
+        "width": 128,
+        "embedding_dim": 128,
+        "target_dim": 288,
+        "layers": 2,
+        "dropout": 0.1,
+        "num_players": 8
+      },
+      "player_names": [
+        "Anand",
+        "Carlsen",
+        "Caruana",
+        "Duda",
+        "Erigaisi",
+        "Firouzja",
+        "Praggnanandhaa",
+        "Tal"
+      ]
+    }
+  },
+  "metadata_player_classifier_accuracy": 0.5078864353312302,
+  "metadata_classifier": {
+    "accuracy": 0.5078864353312302,
+    "iterations": 550,
+    "converged": true
+  },
+  "comparisons_to_strategic": {
+    "strategic": {
+      "standard": {
+        "mean_difference": 0.0,
+        "ci95": [
+          0.0,
+          0.0
+        ],
+        "queries": 1268
+      },
+      "cross_eco": {
+        "mean_difference": 0.0,
+        "ci95": [
+          0.0,
+          0.0
+        ],
+        "queries": 1267
+      },
+      "modern_cross_eco": {
+        "mean_difference": 0.0,
+        "ci95": [
+          0.0,
+          0.0
+        ],
+        "queries": 1042
+      }
+    },
+    "frozen_position": {
+      "standard": {
+        "mean_difference": -0.0007886435331230284,
+        "ci95": [
+          -0.025870696557245793,
+          0.024229383506805435
+        ],
+        "queries": 1268
+      },
+      "cross_eco": {
+        "mean_difference": 0.009471191791633781,
+        "ci95": [
+          -0.015645032051282048,
+          0.03445512820512821
+        ],
+        "queries": 1267
+      },
+      "modern_cross_eco": {
+        "mean_difference": -0.015355086372360844,
+        "ci95": [
+          -0.0458128078817734,
+          0.014544334975369446
+        ],
+        "queries": 1042
+      }
+    },
+    "frozen_decision": {
+      "standard": {
+        "mean_difference": -0.0015772870662460567,
+        "ci95": [
+          -0.025620496397117692,
+          0.020816653322658127
+        ],
+        "queries": 1268
+      },
+      "cross_eco": {
+        "mean_difference": 0.004735595895816891,
+        "ci95": [
+          -0.01865985576923077,
+          0.02686298076923075
+        ],
+        "queries": 1267
+      },
+      "modern_cross_eco": {
+        "mean_difference": -0.0028790786948176585,
+        "ci95": [
+          -0.033546798029556645,
+          0.027844827586206884
+        ],
+        "queries": 1042
+      }
+    },
+    "concept_42": {
+      "standard": {
+        "mean_difference": -0.01971608832807571,
+        "ci95": [
+          -0.04485588470776621,
+          0.0034127301841473086
+        ],
+        "queries": 1268
+      },
+      "cross_eco": {
+        "mean_difference": -0.014206787687450671,
+        "ci95": [
+          -0.03588741987179487,
+          0.007612179487179487
+        ],
+        "queries": 1267
+      },
+      "modern_cross_eco": {
+        "mean_difference": 0.009596928982725527,
+        "ci95": [
+          -0.020948275862068964,
+          0.03894088669950736
+        ],
+        "queries": 1042
+      }
+    },
+    "joint_21": {
+      "standard": {
+        "mean_difference": 0.005520504731861199,
+        "ci95": [
+          -0.02241793434747798,
+          0.02842273819055244
+        ],
+        "queries": 1268
+      },
+      "cross_eco": {
+        "mean_difference": 0.014206787687450671,
+        "ci95": [
+          -0.014022435897435898,
+          0.03808092948717947
+        ],
+        "queries": 1267
+      },
+      "modern_cross_eco": {
+        "mean_difference": 0.008637236084452975,
+        "ci95": [
+          -0.022918719211822657,
+          0.03940886699507389
+        ],
+        "queries": 1042
+      }
+    },
+    "joint_42": {
+      "standard": {
+        "mean_difference": -0.005520504731861199,
+        "ci95": [
+          -0.03242594075260208,
+          0.01862489991993594
+        ],
+        "queries": 1268
+      },
+      "cross_eco": {
+        "mean_difference": 0.004735595895816891,
+        "ci95": [
+          -0.02123397435897436,
+          0.031860977564102555
+        ],
+        "queries": 1267
+      },
+      "modern_cross_eco": {
+        "mean_difference": 0.02015355086372361,
+        "ci95": [
+          -0.009852216748768473,
+          0.053719211822660075
+        ],
+        "queries": 1042
+      }
+    },
+    "joint_7": {
+      "standard": {
+        "mean_difference": -0.006309148264984227,
+        "ci95": [
+          -0.030044035228182546,
+          0.018414731785428344
+        ],
+        "queries": 1268
+      },
+      "cross_eco": {
+        "mean_difference": 0.0023677979479084454,
+        "ci95": [
+          -0.02384815705128205,
+          0.027473958333333305
+        ],
+        "queries": 1267
+      },
+      "modern_cross_eco": {
+        "mean_difference": 0.0028790786948176585,
+        "ci95": [
+          -0.02859605911330049,
+          0.03155172413793101
+        ],
+        "queries": 1042
+      }
+    },
+    "player_42": {
+      "standard": {
+        "mean_difference": 0.013406940063091483,
+        "ci95": [
+          -0.013610888710968775,
+          0.040452361889511596
+        ],
+        "queries": 1268
+      },
+      "cross_eco": {
+        "mean_difference": 0.03314917127071823,
+        "ci95": [
+          0.004196714743589744,
+          0.05952524038461536
+        ],
+        "queries": 1267
+      },
+      "modern_cross_eco": {
+        "mean_difference": 0.007677543186180422,
+        "ci95": [
+          -0.02144088669950739,
+          0.040886699507389164
+        ],
+        "queries": 1042
+      }
+    }
+  },
+  "caveats": [
+    "Player retrieval is a player-association diagnostic, not validated style similarity.",
+    "Same-ECO retrieval diagnoses opening content; cross-ECO excludes exact ECO codes, not all opening similarity.",
+    "The metadata classifier is a separate classification task, not a directly comparable retrieval method.",
+    "Concept supervision uses engineered targets, so concept recovery is not independent validation.",
+    "Time controls are unknown in the source PGNs; no time-control-matched claim is made.",
+    "No human-judged semantic benchmark has been collected."
+  ],
+  "selected_temporal_run": "joint_21",
+  "selection_rule": "Minimum validation loss among joint-objective seeds; test retrieval not used for selection",
+  "map_neighbor_retention10": {
+    "strategic": 0.291,
+    "frozen": 0.31539999999999996,
+    "temporal": 0.30619999999999997,
+    "baseline": 0.4485,
+    "player": 0.37079999999999996
+  },
+  "display_games": 1000,
+  "display_splits": {
+    "train": 183,
+    "test": 792,
+    "val": 25
+  },
+  "date": "2026-10-28",
+  "pipeline_source_hashes": {
+    "src/game_identity.py": "4d4c51d3cc2e95632d9ea63f721b0c20612c8912de30f6198b5deddba8f1438f",
+    "src/atlas_model.py": "f428e5952c28e73c868fe51b048aab6bc361a563c7f7621bf7f31c7a053b44eb",
+    "scripts/prepare_atlas_corpus.py": "3f7b74c989d808e049326597caa477c318604511d7af71d1af029cc8fd5fd0ef",
+    "scripts/extract_atlas_embeddings.py": "7bd762d67412569f80be0ad832df9729138fabd59346c547610b01cbe865f055",
+    "scripts/train_atlas_encoder.py": "fabb50b67cc15fde93090b726afe48bf05e41623630cf64c66abf76efb870607",
+    "scripts/evaluate_atlas_experiments.py": "2b518b926444a702d2a498685cc93b6bc7f0450ac50ebe99248d6ec6e5891727",
+    "scripts/export_atlas_website.py": "451c78fe7f2a89a28c0de1bd27d7f5b86f16170344bd936fec49d10bf6c06eaf"
+  },
+  "cache_integrity": {
+    "samples": 36234,
+    "unique_games": 34740,
+    "canonical_overlap": 0,
+    "integrity_sha256": "3a2a97a1077497bb62982da23aed965a0f92a939872f610a0209df0d40f50d63"
+  }
+}

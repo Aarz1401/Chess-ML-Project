@@ -49,6 +49,7 @@ from board_dataset import (
     normalize_player_name,
 )
 from tensor_cache import SPLIT_NAMES, save_manifest, split_file
+from game_identity import canonical_game_id, target_color, split_for_game, file_sha256
 
 
 @dataclass(frozen=True)
@@ -65,34 +66,28 @@ class OffsetRecord:
     date: str
     event: str
     result: str
+    game_id: str
 
 
 def target_color_from_headers(headers: chess.pgn.Headers, label_name: str) -> bool | None:
     """Return which side the labeled player took, or None if absent."""
 
-    target = normalize_player_name(label_name)
-    if not target:
-        return None
-    if target in normalize_player_name(headers.get("White", "")):
-        return chess.WHITE
-    if target in normalize_player_name(headers.get("Black", "")):
-        return chess.BLACK
-    return None
+    return target_color(headers, label_name)
 
 
 def scan_label_file(pgn_path: Path, label_name: str, label_id: int) -> list[OffsetRecord]:
-    """Collect byte offsets of usable games without parsing move text."""
+    """Collect offsets and canonical IDs, rejecting invalid/ambiguous games."""
 
     records: list[OffsetRecord] = []
     with open(pgn_path, "r", encoding="utf-8", errors="ignore") as pgn_file:
         while True:
             offset = pgn_file.tell()
-            headers = chess.pgn.read_headers(pgn_file)
-            if headers is None:
+            game = chess.pgn.read_game(pgn_file)
+            if game is None:
                 break
-
+            headers = game.headers
             target_color = target_color_from_headers(headers, label_name)
-            if target_color is None:
+            if target_color is None or game.errors:
                 continue
 
             records.append(
@@ -107,9 +102,10 @@ def scan_label_file(pgn_path: Path, label_name: str, label_id: int) -> list[Offs
                     date=headers.get("Date", ""),
                     event=headers.get("Event", ""),
                     result=headers.get("Result", ""),
+                    game_id=canonical_game_id(game),
                 )
             )
-    return records
+    return list({(r.game_id, r.target_color): r for r in records}.values())
 
 
 def balance_and_split(
@@ -129,13 +125,8 @@ def balance_and_split(
     for label_name in sorted(records_by_label):
         items = list(records_by_label[label_name])
         rng.shuffle(items)
-        items = items[:target_count]
-        train_end = int(len(items) * train_frac)
-        val_end = train_end + int(len(items) * val_frac)
-        splits["train"].extend(items[:train_end])
-        splits["val"].extend(items[train_end:val_end])
-        splits["test"].extend(items[val_end:])
-
+        for record in items[:target_count]:
+            splits[split_for_game(record.game_id, seed, train_frac, val_frac)].append(record)
     for items in splits.values():
         rng.shuffle(items)
     return splits
@@ -225,6 +216,8 @@ def materialize_split(
                     record.date,
                     record.event,
                     record.result,
+                    record.game_id,
+                    "white" if record.target_color else "black",
                 ]
             )
             write_idx += 1
@@ -276,6 +269,8 @@ def materialize_split(
                 "date",
                 "event",
                 "result",
+                "game_id",
+                "target_color",
             ]
         )
         writer.writerows(metadata_rows)
@@ -312,6 +307,8 @@ def main() -> None:
     data_dir = Path(args.data_dir)
     cache_dir = Path(args.cache_dir)
     cache_dir.mkdir(parents=True, exist_ok=True)
+    if (cache_dir / "manifest.json").exists():
+        raise FileExistsError("Use a new cache directory; completed caches are immutable")
 
     selected_labels = list(dict.fromkeys(args.labels))
     unknown = sorted(set(selected_labels) - set(LABEL_NAMES))
@@ -360,6 +357,9 @@ def main() -> None:
     save_manifest(
         cache_dir,
         {
+            "schema_version": 2,
+            "grouped_split": True,
+            "source_hashes": {p.name: file_sha256(p) for p in data_dir.glob("*.pgn") if p.stem in selected_labels},
             "labels": selected_labels,
             "input_channels": INPUT_CHANNELS,
             "sequence_length": args.sequence_length,

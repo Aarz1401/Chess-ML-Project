@@ -17,3 +17,11 @@ __pycache__/
 # Private local notes
 /CHESS_COM_EMAIL_DRAFT.md
 /POC_REPORT.md
+
+# Website development tools
+node_modules/
+
+# Isolated atlas HPC outputs and third-party model source
+/runs/
+/models/
+/upstream-maia3/

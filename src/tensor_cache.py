@@ -18,11 +18,13 @@ Cache directory layout:
 from __future__ import annotations
 
 import json
+import csv
 from pathlib import Path
 
 import numpy as np
 import torch
 from torch.utils.data import Dataset
+from game_identity import file_sha256
 
 MANIFEST_NAME = "manifest.json"
 SPLIT_NAMES = ("train", "val", "test")
@@ -33,8 +35,10 @@ def manifest_path(cache_dir: Path) -> Path:
 
 
 def save_manifest(cache_dir: Path, manifest: dict) -> None:
-    with open(manifest_path(cache_dir), "w", encoding="utf-8") as f:
+    temporary = manifest_path(cache_dir).with_suffix(".tmp")
+    with open(temporary, "w", encoding="utf-8") as f:
         json.dump(manifest, f, indent=2)
+    temporary.replace(manifest_path(cache_dir))
 
 
 def load_manifest(cache_dir: Path) -> dict:
@@ -49,6 +53,58 @@ def load_manifest(cache_dir: Path) -> dict:
 
 def split_file(cache_dir: Path, split: str, kind: str) -> Path:
     return Path(cache_dir) / f"{split}_{kind}.npy"
+
+
+def validate_cache(cache_dir: Path, data_dir: Path | None = None) -> dict:
+    """Reject stale schemas, incomplete arrays, and cross-split game leakage."""
+    cache_dir = Path(cache_dir)
+    manifest = load_manifest(cache_dir)
+    if manifest.get("schema_version") != 2 or not manifest.get("grouped_split"):
+        raise ValueError("Legacy cache has no grouped game identities; rebuild it")
+    if not manifest.get("source_hashes"):
+        raise ValueError("Cache is missing source hashes")
+    if data_dir is not None:
+        for name, digest in manifest["source_hashes"].items():
+            path = Path(data_dir) / name
+            if not path.exists() or file_sha256(path) != digest:
+                raise ValueError(f"Cache source changed: {name}")
+    groups = {}
+    for split in SPLIT_NAMES:
+        sequence = np.load(split_file(cache_dir, split, "sequences"), mmap_mode="r")
+        masks = np.load(split_file(cache_dir, split, "masks"), mmap_mode="r")
+        labels = np.load(split_file(cache_dir, split, "labels"), mmap_mode="r")
+        n = manifest["counts"][split]
+        if sequence.shape != (
+            n,
+            manifest["sequence_length"],
+            manifest["input_channels"],
+            8,
+            8,
+        ):
+            raise ValueError(f"Cache sequence shape mismatch: {split}")
+        if masks.shape != (n, manifest["sequence_length"]) or labels.shape != (n,):
+            raise ValueError(f"Cache labels/masks shape mismatch: {split}")
+        if (
+            masks.dtype != bool
+            or sequence.dtype != np.float16
+            or labels.dtype != np.int64
+        ):
+            raise ValueError(f"Cache dtype mismatch: {split}")
+        if n and (labels.min() < 0 or labels.max() >= len(manifest["labels"])):
+            raise ValueError(f"Cache contains unknown labels: {split}")
+        if np.any(masks.all(axis=1)):
+            raise ValueError(f"Cache contains empty games: {split}")
+        with (cache_dir / f"{split}_metadata.csv").open() as source:
+            records = list(csv.DictReader(source))
+        if len(records) != n or any(not row.get("game_id") for row in records):
+            raise ValueError(f"Missing canonical metadata: {split}")
+        if len({(r["game_id"], r["target_color"]) for r in records}) != n:
+            raise ValueError(f"Duplicate game perspectives: {split}")
+        for row in records:
+            old = groups.setdefault(row["game_id"], split)
+            if old != split:
+                raise ValueError("Canonical game appears in multiple splits")
+    return manifest
 
 
 class CachedChessDataset(Dataset):
@@ -70,7 +126,9 @@ class CachedChessDataset(Dataset):
     @property
     def sequences(self) -> np.ndarray:
         if self._sequences is None:
-            self._sequences = np.load(split_file(self.cache_dir, self.split, "sequences"), mmap_mode="r")
+            self._sequences = np.load(
+                split_file(self.cache_dir, self.split, "sequences"), mmap_mode="r"
+            )
         return self._sequences
 
     def __len__(self) -> int:

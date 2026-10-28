@@ -88,6 +88,15 @@
           <div class="representation-row">
             <label for="representation">Representation</label
             ><select id="representation">
+              <option value="temporal">
+                Learned temporal · 128 dimensions
+              </option>
+              <option value="player">
+                Player-supervised control · 128 dimensions
+              </option>
+              <option value="frozen">
+                Frozen Maia-3 + moves · 128 dimensions
+              </option>
               <option value="strategic">
                 Strategic fingerprint · 288 dimensions
               </option>
@@ -109,6 +118,15 @@
                 <option value="1-0">White wins</option>
                 <option value="0-1">Black wins</option>
                 <option value="1/2-1/2">Draws</option>
+              </select></label
+            >
+            <label class="select-label"
+              ><span>Color</span
+              ><select id="color-by" aria-label="Color map by">
+                <option value="player">Player</option>
+                <option value="opening">ECO family</option>
+                <option value="king">King exposure</option>
+                <option value="pawn">Pawn advance</option>
               </select></label
             >
           </div>
@@ -141,6 +159,12 @@
             <span><i></i> Color identifies the reference player</span
             ><button id="method">What does distance mean? ↗</button>
           </div>
+          <div class="neighbor-options">
+            <label
+              ><input type="checkbox" id="cross-opening" /> Find neighbors with
+              a different ECO code</label
+            >
+          </div>
           <div class="similar-section">
             <div class="similar-heading">
               <h3>In the same neighborhood</h3>
@@ -172,7 +196,8 @@
           <div class="game-badges">
             <span id="game-result" class="badge"></span
             ><span id="game-eco" class="badge"></span
-            ><span id="game-length" class="badge"></span>
+            ><span id="game-length" class="badge"></span
+            ><span id="game-split" class="badge"></span>
           </div>
           <div class="board-wrap">
             <div
@@ -209,6 +234,41 @@
           </div>
         </aside>
       </div>
+      <section class="results-panel" aria-labelledby="results-title">
+        <div class="results-heading">
+          <div>
+            <div class="eyebrow">EXPERIMENT NOTEBOOK · JUBAIL HPC</div>
+            <h2 id="results-title">What do the representations capture?</h2>
+          </div>
+          <a href="experiments.json" download>Download measured results ↓</a>
+        </div>
+        <p id="results-summary">
+          The experiment report will appear when the Jubail runs complete.
+        </p>
+        <div id="experiment-facts" class="experiment-facts"></div>
+        <div class="results-table-wrap">
+          <table class="results-table">
+            <thead>
+              <tr>
+                <th>Representation</th>
+                <th>Player top-1</th>
+                <th>95% interval</th>
+                <th>Different-ECO top-1</th>
+                <th>Modern + different ECO</th>
+                <th>Same-ECO neighbor</th>
+              </tr>
+            </thead>
+            <tbody id="experiment-rows"></tbody>
+          </table>
+        </div>
+        <div id="experiment-notes" class="experiment-notes"></div>
+        <p class="results-limit">
+          Modern subset: 2015–2026, both ratings 2400–3000, and a different
+          exact ECO code. These diagnostics measure player association and
+          opening content. Chess-style similarity has not been validated with
+          human judgments. The source games lack time-control metadata.
+        </p>
+      </section>
       <footer class="page-footer">
         <span
           >GAME ATLAS <span class="dot-separator">·</span> Built for the curious
@@ -248,10 +308,12 @@
       </p>
       <div class="method-stat" id="variance"></div>
       <p>
-        The selector also exposes the original 12-statistic PCA baseline.
-        Neither representation is a trained neural model. The strategic
-        fingerprint has more chess information, but its ability to capture style
-        still needs evaluation.
+        The frozen neural mode uses Maia-3's learned position and chosen-move
+        features. The temporal mode adds a small game encoder trained with
+        paired views and engineered chess-concept targets. Model selection uses
+        validation loss. The handcrafted baselines remain available for
+        comparison. These methods still need independent human evaluation of
+        strategic similarity.
       </p>
       <p>
         Player colors identify the source collection and target perspective. A

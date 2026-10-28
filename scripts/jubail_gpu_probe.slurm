@@ -39,7 +39,7 @@ if not torch.cuda.is_available():
 device = torch.device("cuda")
 report = dict(python=platform.python_version(), pytorch=torch.__version__,
               torch_cuda=torch.version.cuda, gpu=torch.cuda.get_device_name(device),
-              bf16_supported=torch.cuda.is_bf16_supported())
+              native_bf16_supported=torch.cuda.get_device_capability()[0] >= 8)
 a = torch.randn(1024, 1024, device=device)
 for _ in range(3):
     result = a @ a

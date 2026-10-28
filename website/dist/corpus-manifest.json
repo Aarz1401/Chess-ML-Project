@@ -1,0 +1,79 @@
+{
+  "corpus_id": "c39156a8008b5723c32473d6970567c5f9bb556adf025e3cfe583b05d8db75cd",
+  "samples": 36234,
+  "unique_games": 34740,
+  "split_samples": {
+    "train": 29064,
+    "test": 3622,
+    "val": 3548
+  },
+  "split_unique_games": {
+    "train": 27862,
+    "val": 3396,
+    "test": 3482
+  },
+  "missing_time_control": 36234,
+  "source_hashes": {
+    "Anand.pgn": "eb168cbaeeae130ce8776f14d33e4b84f8bec562bd6c8c72221a09203849dd49",
+    "Carlsen.pgn": "67a29bfec65b734edf3de3bdc5b96cd8f293910a1bb2ba810658dd9a7434d0c9",
+    "Caruana.pgn": "5346623f4af759240c95c92dde63228b0f8f315839cced0703779bb31f7ece51",
+    "Duda.pgn": "8ad0fcee43fc14dee8edf9e09d1d07b71f5a81ff984609e42ae19dbfae33170c",
+    "Erigaisi.pgn": "be9c7b0a2f05ad58544fd77cf11fa87f2ffc6b639b4851c7127a14ecf4619f09",
+    "Firouzja.pgn": "6013e14e1680ea388be671818e4ebd31b707ef9b28e7f3693e01a83a65c8b368",
+    "Praggnanandhaa.pgn": "5d9d2ab575ad49e906a5fd2362aca0894b64b9a432ae0e1b6b690b0f5c4cb53a",
+    "Tal.pgn": "da7d473f53ac933c3a14ca4aff872bc50fe64385234f3635094cc500c0b0ad59"
+  },
+  "decisions": 24,
+  "history": 8,
+  "skip_plies": 12,
+  "max_plies": 120,
+  "source_counts": {
+    "Anand": {
+      "records": 4211,
+      "too_short": 46,
+      "accepted": 4165
+    },
+    "Carlsen": {
+      "records": 7484,
+      "too_short": 31,
+      "ambiguous_target": 1,
+      "accepted": 7452
+    },
+    "Caruana": {
+      "records": 6008,
+      "too_short": 36,
+      "ambiguous_target": 1,
+      "accepted": 5971
+    },
+    "Duda": {
+      "records": 4622,
+      "too_short": 23,
+      "ambiguous_target": 2,
+      "duplicates_within_collection": 1,
+      "accepted": 4596
+    },
+    "Erigaisi": {
+      "records": 4066,
+      "too_short": 21,
+      "ambiguous_target": 4,
+      "duplicates_within_collection": 2,
+      "accepted": 4039
+    },
+    "Firouzja": {
+      "records": 4931,
+      "too_short": 22,
+      "accepted": 4909
+    },
+    "Praggnanandhaa": {
+      "records": 2776,
+      "too_short": 12,
+      "ambiguous_target": 1,
+      "accepted": 2763
+    },
+    "Tal": {
+      "records": 2431,
+      "too_short": 92,
+      "accepted": 2339
+    }
+  }
+}

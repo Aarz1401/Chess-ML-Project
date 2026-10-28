@@ -1,82 +1,96 @@
-# Understanding Game Atlas
+# Understanding Game Atlas for an interview
 
 ## The problem
 
-Given a chess game, find other games with comparable patterns and let a user
-inspect them on a map and replay board. This is a similarity-search problem.
-The current website uses engineered features. The repository's neural model
-is a separate experiment and has not yet supplied the website's vectors.
+Given a chess game, retrieve games with related patterns and make the comparison
+inspectable on a map and replay board. This is a representation-learning and
+similarity-search project. Defining useful similarity is part of the problem.
 
-## Follow one game
+## Follow one game through the current pipeline
 
-1. Parse its PGN and identify the target player's color from the player header.
-2. Replay the moves legally. Keep positions after the target player's moves,
-   starting after 12 plies and stopping at ply 120.
-3. For each retained position/decision, compute 96 numerical features.
-4. Divide the retained sequence into three chronological segments. Average
-   each segment independently, then concatenate: 96 × 3 = 288 dimensions.
-5. Standardize each dimension using the reference collection, clip extreme
-   standardized values to [-3, 3], and apply block weights.
-6. Normalize the vector to length one. Compare vectors to retrieve games.
-7. Project the collection to two dimensions for browsing. Keep retrieval in
-   the original 288-dimensional space.
+1. Parse its PGN, match the target player exactly, and reconstruct legal boards.
+2. Hash the starting FEN and move sequence. Keep duplicate games and both player
+   perspectives in the same train/validation/test split.
+3. Skip 12 opening plies, stop at ply 120, and sample up to 24 target decisions.
+4. Encode each pre-move board and its preceding eight-position history with a
+   frozen, pretrained Maia-3 5M model. Keep its pooled position features and the
+   chosen move's from/to-square features: 768 numbers per decision.
+5. Either pool these features directly, or train a small two-layer Transformer
+   with position information and attention pooling to produce a normalized
+   128-dimensional game vector.
+6. Retrieve neighbors using the full vector. Separately project displayed games
+   with PCA/t-SNE to make an interactive map.
+7. Export vectors and replay chunks. The website serves static files and needs
+   no live connection to the cluster.
 
-## Explain the main choices
+The upstream Maia model was pretrained by its authors to predict human moves.
+This project adapts those features and trains the small game-level encoder; it
+does not claim to have trained the foundation model from scratch.
 
-**Why target-relative?** A black pawn moving toward rank 1 and a white pawn
-moving toward rank 8 both advance. Mirroring ranks makes those comparable.
-Kingside and queenside remain distinct.
+## Understand the experiments
 
-**Why three segments?** An average over a whole game loses how positions
-change. Three summaries preserve coarse progression without requiring games
-to have equal lengths. They still lose exact move order inside each segment.
+| Mode | Where its representation comes from |
+| --- | --- |
+| Simple baseline | 12 whole-game chess statistics |
+| Strategic fingerprint | 96 target-relative features, averaged in three segments |
+| Frozen neural | Train-only reduction of pooled Maia position and move features |
+| Learned temporal | Paired views plus engineered concept targets, with three seeds |
+| Player control | Explicit player-label classification and contrastive supervision |
 
-**Why standardization?** A feature measured in large numerical units should
-not dominate distance simply because of its units.
+Names and results are not network inputs. Player names supply supervision in
+the identity-control experiment. The concept targets are engineered labels,
+so recovering those concepts is not independent semantic validation.
 
-**Why block weights?** There are 48 placement dimensions but seven king-safety
-dimensions per segment. Distribute a block's weight across its dimensions so
-its dimension count alone does not control similarity. The chosen weights
-are explicit heuristics and should be tested with retrieval judgments.
+Black's ranks are mirrored so pawn advancement has the same meaning for either
+color. Kingside/queenside identity is preserved. Actual legal histories are
+retained: we do not shuffle moves or invent illegal chess augmentations.
 
-**Why normalize?** We compare direction in feature space. For unit vectors,
-squared Euclidean distance equals `2 - 2 * cosine_similarity`, so Euclidean
-and cosine similarity give the same neighbor ranking.
+Attention pooling learns how to combine decision tokens. Its weights are not
+automatically faithful explanations of the model's decisions.
 
-**Why PCA then t-SNE?** PCA compresses redundant dimensions, then t-SNE attempts
-to preserve local neighborhoods in two dimensions. t-SNE can create visually
-convincing groups, so evaluate neighborhood preservation and inspect retrieved
-games. Map gaps, cluster sizes, and axes have no direct chess interpretation.
+## Explain the metric and visualization
 
-## Evidence and limitations
+For vectors normalized to length one, squared Euclidean distance is
+2 minus 2 times cosine similarity. The two metrics give the same neighbor order.
 
-All 240 bundled games are legally replayed in validation. Both feature pipelines
-are reconstructed, and target-relative color symmetry is checked. The website
-reports how many high-dimensional neighbors survive the map projection.
+Standardization makes numerical feature scales comparable; block weights keep
+48 placement dimensions from overwhelming seven king-safety dimensions.
+Those weights are explicit design choices.
 
-These checks establish implementation consistency and projection fidelity.
-They do not establish that the system captures human notions of chess style.
-We need a similarity rubric, judged pairs or triplets, and controlled tests
-for openings, era and playing strength. A larger number of dimensions alone
-is not evidence of a better representation.
+PCA compresses redundant dimensions. t-SNE attempts to preserve local
+neighborhoods in two dimensions. Map gaps, cluster sizes and axes have no direct
+chess interpretation. Benchmark retrieval uses full vectors, not screen distance.
 
-The current collection has no held-out evaluation for this similarity task.
-Standardization and projection fit the entire browsing collection; that is
-appropriate for displaying it, but is not a generalization benchmark.
+## Explain the real result
 
-## The next ML experiment
+The fresh eight-label audit gives 14.75% player top-1 for the strategic baseline
+and 15.30% for the validation-selected joint model. The paired uncertainty
+interval includes zero, so the experiment does not establish an improvement.
 
-Use the engineered fingerprint as a baseline. Train the existing sequence
-encoder on a clearly defined similarity objective and compare its nearest
-games on the same held-out game identities. Same-player labels measure player
-association; they are not automatic ground truth for strategic similarity.
-Group duplicated games before splitting, keep a final test set untouched, and
-compare feature groups and neural representations with the same evaluation.
+A separate metadata classifier reaches 50.79%. It is a different task, but
+demonstrates how era, opening, rating, color and game length can reveal identity.
 
-An honest project description today:
+The main lesson is that more compute and richer embeddings do not define a
+useful similarity objective. Player identification is a proxy; the atlas still
+needs independent judgments of which games are strategically related.
 
-> I built a chess-game explorer with reproducible, target-relative feature
-> vectors and similarity search. I separated the representation from its 2D
-> visualization, measured projection fidelity, and made the retrieved games
-> inspectable. The next experiment compares the baseline with learned embeddings
-> using a controlled similarity evaluation.
+Read the [measured report](atlas-results-2026-10-28.md) for all seeds, the
+player-supervised control, the modern/different-ECO cohort, and uncertainty.
+
+## What to be able to defend
+
+- Trace a single game through IDs, orientation, sampled history, tokens and vectors.
+- Explain why duplicate grouping happens before splitting.
+- Distinguish pretrained features, learned pooling and engineered labels.
+- Explain validation-based selection and the fresh audit after exploration.
+- Describe the augmentation choices and possible false negatives.
+- Separate player retrieval, strategic similarity and projection fidelity.
+- Explain the next experiment: judged cross-game pairs and a meaningful metric,
+  before investing in a larger backbone.
+
+A defensible project description:
+
+> Game Atlas adapts a pretrained chess encoder into game embeddings, trains and
+> compares temporal objectives on Jubail, and publishes a replayable atlas with
+> grouped evaluation and uncertainty. The first controlled results show why
+> player identity alone is insufficient evidence of playing style.

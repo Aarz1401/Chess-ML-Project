@@ -18,6 +18,7 @@ import chess
 import chess.pgn
 import torch
 from torch.utils.data import Dataset
+from game_identity import canonical_game_id, target_color, split_for_game
 
 LABEL_NAMES = [
     "Anand",
@@ -249,6 +250,7 @@ class GameRecord:
     label_id: int
     target_color: bool
     ply_count: int
+    game_id: str = ""
 
 
 @dataclass(frozen=True)
@@ -285,15 +287,7 @@ def normalize_player_name(name: str) -> str:
 def target_color_for_game(game: chess.pgn.Game, label_name: str) -> bool | None:
     """Return the side played by the labeled player in this game."""
 
-    target = normalize_player_name(label_name)
-    white = normalize_player_name(game.headers.get("White", ""))
-    black = normalize_player_name(game.headers.get("Black", ""))
-
-    if target and target in white:
-        return chess.WHITE
-    if target and target in black:
-        return chess.BLACK
-    return None
+    return target_color(game.headers, label_name)
 
 
 def iter_pgn_files(data_dir: Path) -> Iterable[Path]:
@@ -314,6 +308,7 @@ def collect_game_records(data_dir: Path, min_plies: int = 1) -> list[GameRecord]
     """Scan PGN_data and collect games whose target player is identifiable."""
 
     records: list[GameRecord] = []
+    seen: set[tuple[str, bool]] = set()
 
     for pgn_path in iter_pgn_files(data_dir):
         label_name = pgn_path.stem
@@ -328,7 +323,9 @@ def collect_game_records(data_dir: Path, min_plies: int = 1) -> list[GameRecord]
 
                 target_color = target_color_for_game(game, label_name)
                 ply_count = count_mainline_plies(game)
-                if target_color is not None and ply_count >= min_plies:
+                game_id = canonical_game_id(game)
+                if target_color is not None and ply_count >= min_plies and not game.errors and (game_id, target_color) not in seen:
+                    seen.add((game_id, target_color))
                     records.append(
                         GameRecord(
                             pgn_path=pgn_path,
@@ -337,6 +334,7 @@ def collect_game_records(data_dir: Path, min_plies: int = 1) -> list[GameRecord]
                             label_id=label_id,
                             target_color=target_color,
                             ply_count=ply_count,
+                            game_id=game_id,
                         )
                     )
                 game_index += 1
@@ -373,25 +371,13 @@ def split_records(
     train_frac: float = 0.8,
     val_frac: float = 0.1,
 ) -> dict[str, list[GameRecord]]:
-    """Make a stratified game-level split to prevent leakage across splits."""
-
-    rng = random.Random(seed)
-    by_label: dict[str, list[GameRecord]] = {}
-    for record in records:
-        by_label.setdefault(record.label_name, []).append(record)
-
+    """Assign every perspective of an identical game to the same split."""
     splits = {"train": [], "val": [], "test": []}
-    for label_name in LABEL_NAMES:
-        items = list(by_label[label_name])
-        rng.shuffle(items)
-        train_end = int(len(items) * train_frac)
-        val_end = train_end + int(len(items) * val_frac)
-        splits["train"].extend(items[:train_end])
-        splits["val"].extend(items[train_end:val_end])
-        splits["test"].extend(items[val_end:])
-
+    for record in records:
+        split = split_for_game(record.game_id, seed, train_frac, val_frac)
+        splits[split].append(record)
     for items in splits.values():
-        rng.shuffle(items)
+        random.Random(seed).shuffle(items)
     return splits
 
 
@@ -1022,6 +1008,7 @@ def materialize_samples(
         by_path.setdefault(record.pgn_path, {})[record.game_index] = record
 
     samples: list[tuple[torch.Tensor, torch.Tensor, int]] = []
+    kept_records: list[GameRecord] = []
     completed = 0
     total = len(records)
 
@@ -1039,6 +1026,7 @@ def materialize_samples(
                     if tensors is not None:
                         sequence, padding_mask = tensors
                         samples.append((sequence, padding_mask, record.label_id))
+                        kept_records.append(record)
 
                     completed += 1
                     if completed % 25 == 0 or completed == total:
@@ -1050,5 +1038,9 @@ def materialize_samples(
             missing = ", ".join(str(index) for index in sorted(selected_games))
             raise ValueError(f"Could not find selected games in {pgn_path}: {missing}")
 
-    random.shuffle(samples)
-    return samples
+    combined = list(zip(samples, kept_records))
+    random.shuffle(combined)
+    metadata_records = kwargs.get("metadata_records")
+    if isinstance(metadata_records, list):
+        metadata_records.extend(record for _, record in combined)
+    return [sample for sample, _ in combined]

@@ -1,4 +1,4 @@
-torch>=2.0.0
+torch>=2.6.0
 python-chess>=1.999
 numpy
 huggingface_hub

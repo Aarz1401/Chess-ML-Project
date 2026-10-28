@@ -1,0 +1,41 @@
+Game Atlas original additions (MIT)
+===================================
+
+src/game_identity.py
+src/atlas_model.py
+
+scripts/prepare_atlas_corpus.py
+scripts/extract_atlas_embeddings.py
+scripts/train_atlas_encoder.py
+scripts/evaluate_atlas_experiments.py
+scripts/export_atlas_website.py
+scripts/split_atlas_replays.py
+scripts/validate_atlas_cache.py
+scripts/validate_tensor_cache.py
+scripts/download_atlas_model.py
+scripts/jubail_atlas_cpu.slurm
+scripts/jubail_atlas_gpu.slurm
+scripts/submit_atlas_jubail.sh
+
+tests/test_atlas_pipeline.py
+tests/check_atlas_ui.cjs
+
+Original website software is covered separately by website/LICENSE.
+Existing source files retain their applicable notices and are not included in
+the new-file license grant.
+
+Third-party dependencies and data
+================================
+
+Maia-3 is provided by CSSLab under its own AGPL-3.0 license:
+https://github.com/CSSLab/maia3
+Its source is an external pinned checkout, not vendored here. The download
+helper records and verifies the selected public checkpoint revision and hash.
+No upstream checkpoint is included in the static website.
+
+Existing PGN collections and PGN-derived exports are outside the MIT grant.
+Original download URLs and collection redistribution terms were not recorded.
+See website/DATA.md. The generated experiment report contains this project's
+measurements; it does not change source-data or model licensing.
+
+Other dependencies retain their own licenses.

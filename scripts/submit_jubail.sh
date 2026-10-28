@@ -2,7 +2,7 @@
 # One-command launcher for Jubail (NYUAD HPC).
 #
 # First time only, on a login node from the repository root:
-#     module load python/3.11        # or: module load python
+#     module load python/3.11.3        # or: module load python
 #     python3 -m venv .venv-jubail
 #     source .venv-jubail/bin/activate
 #     pip install --upgrade pip
@@ -19,6 +19,11 @@
 
 set -euo pipefail
 cd "$(dirname "$0")/.."
+: "${SCRATCH:?SCRATCH must be set}"
+case "$(pwd -P)/" in
+  "$(realpath "$SCRATCH")/"*) ;;
+  *) echo "Submit from a scratch checkout"; exit 1 ;;
+esac
 mkdir -p logs
 
 export CACHE_DIR="${CACHE_DIR:-$SCRATCH/chess_style/tensor_cache_full}"
@@ -30,7 +35,8 @@ if [ ! -d ".venv-jubail" ]; then
 fi
 
 if [ -f "${CACHE_DIR}/manifest.json" ]; then
-  echo "Tensor cache found at ${CACHE_DIR} - skipping precompute."
+  .venv-jubail/bin/python scripts/validate_tensor_cache.py --cache-dir "${CACHE_DIR}" --data-dir data/pgn
+  echo "Validated tensor cache at ${CACHE_DIR} - skipping precompute."
   train_id=$(sbatch --parsable --export=ALL scripts/jubail_train.slurm)
   echo "Submitted training job ${train_id}."
 else

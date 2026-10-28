@@ -91,13 +91,18 @@ def save_embedding_split(
     labels: torch.Tensor,
     label_names: dict[int, str],
     output_dir: Path,
+    records: list | None = None,
 ) -> None:
     """Save one split as a tensor file plus traceable CSV metadata."""
 
+    if records is None or len(records) != len(labels):
+        raise ValueError("Export requires one aligned canonical record per embedding")
     output_dir.mkdir(parents=True, exist_ok=True)
     torch.save(
         {
             "split": split_name,
+            "game_ids": [r.game_id for r in records],
+            "target_colors": [bool(r.target_color) for r in records],
             "embeddings": embeddings,
             "labels": labels,
             "label_names": label_names,
@@ -110,9 +115,10 @@ def save_embedding_split(
 
     with open(output_dir / f"embeddings_{split_name}_metadata.csv", "w", newline="", encoding="utf-8") as f:
         writer = csv.writer(f)
-        writer.writerow(["row_index", "split", "label_id", "label_name"])
+        writer.writerow(["row_index", "split", "label_id", "label_name", "game_id", "target_color", "pgn_path", "game_index"])
         for row_idx, label_id in enumerate(labels.tolist()):
-            writer.writerow([row_idx, split_name, label_id, label_names[int(label_id)]])
+            r = records[row_idx]
+            writer.writerow([row_idx, split_name, label_id, label_names[int(label_id)], r.game_id, "white" if r.target_color else "black", r.pgn_path, r.game_index])
 
 
 def parse_args() -> argparse.Namespace:
@@ -121,8 +127,8 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--data-dir", default=str(ROOT / "data" / "pgn"))
     parser.add_argument("--output-dir", default=str(ROOT / "results" / "embeddings"))
     parser.add_argument("--max-games-per-player", type=int, default=500)
-    parser.add_argument("--sequence-length", type=int, default=80)
-    parser.add_argument("--skip-plies", type=int, default=0, help="Skip this many opening plies before recording tensors.")
+    parser.add_argument("--sequence-length", type=int, default=None)
+    parser.add_argument("--skip-plies", type=int, default=None, help="Defaults to checkpoint preprocessing.")
     parser.add_argument("--batch-size", type=int, default=32)
     parser.add_argument("--splits", nargs="+", choices=["train", "val", "test"], default=["train", "val", "test"])
     parser.add_argument("--seed", type=int, default=42)
@@ -156,19 +162,20 @@ def main() -> None:
     splits = split_records(records, seed=args.seed)
 
     config = TensorConfig(
-        sequence_length=args.sequence_length,
-        skip_plies=args.skip_plies,
+        sequence_length=args.sequence_length if args.sequence_length is not None else int(checkpoint_args["sequence_length"]),
+        skip_plies=args.skip_plies if args.skip_plies is not None else int(checkpoint_args["skip_plies"]),
         target_moves_only=bool(checkpoint_args.get("target_moves_only", False)),
-        board_flip=not args.no_board_flip,
+        board_flip=not (args.no_board_flip or bool(checkpoint_args.get("no_board_flip", False))),
     )
 
     for split_name in args.splits:
         split_records_for_name = splits[split_name]
         print(f"Materializing {split_name} tensors...")
-        samples = materialize_samples(split_records_for_name, config)
+        kept_records = []
+        samples = materialize_samples(split_records_for_name, config, metadata_records=kept_records)
         print(f"Encoding {split_name} embeddings...")
         embeddings, labels = encode_samples(model, samples, args.batch_size, device)
-        save_embedding_split(split_name, embeddings, labels, label_names, output_dir)
+        save_embedding_split(split_name, embeddings, labels, label_names, output_dir, kept_records)
         print(f"Saved {split_name}: embeddings={tuple(embeddings.shape)}")
 
 

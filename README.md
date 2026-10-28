@@ -1,33 +1,40 @@
-# Chess Style Fingerprint
+# Game Atlas
 
-Learn player-associated chess embeddings from PGN games using an 84-channel
-board representation, a CNN + Transformer, and supervised contrastive learning.
+An interactive chess-game atlas with reproducible representation-learning
+experiments. Explore real games, replay their moves, and compare engineered,
+pretrained, and learned game fingerprints.
 
-This is the active project in the
-[Chess-ML-Project GitHub repository](https://github.com/Aarz1401/Chess-ML-Project).
-Start here and run commands from this directory.
+## Explore the website
 
-## Game Atlas website
+The atlas contains **1,000 games** sampled from a grouped corpus of **34,740
+unique games**. It includes five selectable representations, different-ECO
+neighbors, feature overlays, and real Jubail experiment results.
 
-Explore 240 real games on an interactive map, replay their moves, and retrieve
-similar games. The default map uses 288-dimensional, target-relative strategic fingerprints;
-the original 12-statistic baseline is available for comparison. Both are
-engineered representations, separate from the neural model.
-
-```bash
+~~~bash
 python3 -m http.server 8765 --directory website/dist
-```
+~~~
 
-Open <http://localhost:8765>. See [website setup and methodology](website/README.md).
-For the interview explanation, read [how Game Atlas works](docs/game-atlas-interview.md).
-For the next model experiment, see [better representations and Jubail](docs/representation-roadmap.md).
-The new website code is MIT licensed; the existing PGN data is not relicensed.
+Open <http://localhost:8765>. Serving the site needs only a static HTTP server.
+Node is optional and used for development tests.
+
+- [Measured October 28 results](docs/atlas-results-2026-10-28.md)
+- [Jubail reproduction runbook](docs/atlas-jubail-runbook.md)
+- [Website setup and methodology](website/README.md)
+- [Interview explanation](docs/game-atlas-interview.md)
+
+The learned models have not established a reliable gain over the handcrafted
+baseline on held-out player retrieval. The results and uncertainty are published
+alongside the map. Player identification and projection fidelity do not establish
+strategic-style similarity.
+
+The website code is MIT licensed. Existing PGN data, third-party models and
+pre-existing project code are not relicensed by that website license.
 
 ## Layout
 
 ```text
-src/                         Board tensors, model, cache, evaluation
-scripts/                     Training, evaluation, visualization, Jubail jobs
+src/                         Shared identity, temporal encoder, legacy board model
+scripts/                     Corpus, pretrained extraction, training, evaluation, Jubail jobs
 data/pgn/                    Eight player PGN files (versioned)
 notebooks/                   Explore saved results
 docs/                        Workflow, repository audit, Jubail guidance
@@ -51,7 +58,7 @@ source .venv/bin/activate
 python -m pip install -r requirements.txt
 ```
 
-## Small local check
+## Legacy board-model local check
 
 This checks the full cache → train → evaluate path with a deliberately tiny
 model and dataset. Its scores are not research results.
@@ -59,7 +66,7 @@ model and dataset. Its scores are not research results.
 ```bash
 python scripts/precompute_tensors.py \
   --cache-dir results/smoke_cache --labels Tal Carlsen \
-  --max-games-per-player 10 --sequence-length 8 --min-valid-plies 4 --workers 2
+  --max-games-per-player 50 --sequence-length 8 --min-valid-plies 4 --workers 2
 
 python scripts/train_multiclass.py \
   --cache-dir results/smoke_cache --output-dir results/cleanup_smoke \
@@ -75,7 +82,8 @@ python scripts/evaluate_aggregated.py \
   --ks 1 --trials 2 --num-workers 0
 ```
 
-For larger experiments, use the [workflow reference](docs/workflow.md) and
+For the new atlas pipeline, use the [Jubail runbook](docs/atlas-jubail-runbook.md).
+For older board-model experiments, use the [workflow reference](docs/workflow.md) and
 [Jubail guide](docs/jubail.md). Keep the cache preprocessing settings consistent
 with the training arguments recorded in checkpoints.
 
@@ -87,4 +95,6 @@ residual model architecture; they have not been reproduced during this cleanup.
 Era, opening, opponent, and duplicate-game effects still need controlled
 validation. Player identification alone does not establish a measure of style.
 
-The [project audit](docs/project-audit.md) lists the next improvements in order.
+The earlier [project audit](docs/project-audit.md) records the cleanup findings.
+The [measured atlas report](docs/atlas-results-2026-10-28.md) records which issues
+were fixed and the limits of the current learned representations.

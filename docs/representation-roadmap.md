@@ -1,7 +1,9 @@
 # Better game representations and a Jubail experiment plan
 
-Investigated 2026-10-26. This is a proposed experiment sequence, not a report
-of trained-model results. Existing website representations remain unchanged.
+Originally investigated 2026-10-26. The first implementation and controlled runs
+completed on 2026-10-28. See [measured results](atlas-results-2026-10-28.md) and
+[reproduction steps](atlas-jubail-runbook.md). The proposal below is historical;
+statements about missing implementation describe the pre-run state.
 
 ## Recommendation
 

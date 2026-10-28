@@ -18,10 +18,15 @@
 
 set -euo pipefail
 cd "${SLURM_SUBMIT_DIR}"
+: "${SCRATCH:?SCRATCH must be set}"
+case "$(pwd -P)/" in
+  "$(realpath "$SCRATCH")/"*) ;;
+  *) echo "Submit from a scratch checkout"; exit 1 ;;
+esac
 mkdir -p logs results
 
 module purge || true
-module load python/3.11 2>/dev/null || module load python 2>/dev/null || true
+module load "${PYTHON_MODULE:-python/3.11.3}"
 module load cuda 2>/dev/null || true
 
 if [ -d ".venv-jubail" ]; then

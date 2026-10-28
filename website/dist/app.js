@@ -51,11 +51,59 @@ const escapeHTML = (value) =>
   );
 const short = (name) => name.replace(/,/g, ", ");
 const year = (game) => game.date.slice(0, 4);
-const color = (game) =>
-  COLORS[data.players.indexOf(game.player) % COLORS.length];
-const vector = (g) => (mode === "strategic" ? g.vector : g.baselineVector);
-const position = (g) =>
-  mode === "strategic" ? g.position : g.baselinePosition;
+function featureAverage(game, name) {
+  return data.representation.featureNames.reduce(
+    (sum, feature, i) =>
+      sum + (feature.endsWith(": " + name) ? game.strategicFeatures[i] / 3 : 0),
+    0,
+  );
+}
+function color(game) {
+  const by = $("color-by").value;
+  if (by === "opening")
+    return COLORS[Math.max(0, "ABCDE".indexOf(game.eco[0]))];
+  if (by === "king" || by === "pawn") {
+    const value = featureAverage(
+      game,
+      by === "king" ? "king zone attacked" : "pawn advancement",
+    );
+    return `hsl(${Math.round(95 - 85 * Math.min(1, value * 1.6))} 30% ${Math.round(73 - 30 * Math.min(1, value * 1.6))}%)`;
+  }
+  return COLORS[data.players.indexOf(game.player) % COLORS.length];
+}
+$("color-by").addEventListener("change", () => {
+  const labels = {
+    player: "Color identifies the reference player",
+    opening: "Color identifies ECO family A–E",
+    king: "Color shows target king exposure: pale = lower, dark = higher",
+    pawn: "Color shows target pawn advancement: pale = lower, dark = higher",
+  };
+  document.querySelector(".map-footer > span").textContent =
+    labels[$("color-by").value];
+  renderMap();
+  renderNeighbors();
+});
+const modeFields = {
+  strategic: ["vector", "position"],
+  baseline: ["baselineVector", "baselinePosition"],
+  frozen: ["frozenVector", "frozenPosition"],
+  temporal: ["temporalVector", "temporalPosition"],
+  player: ["playerVector", "playerPosition"],
+};
+const vector = (g) => g[modeFields[mode][0]];
+const position = (g) => g[modeFields[mode][1]];
+function neighborCandidates() {
+  return visible.filter(
+    (g) =>
+      g.id !== selected.id &&
+      (!$("cross-opening").checked ||
+        (selected.eco && g.eco && g.eco !== selected.eco)),
+  );
+}
+$("cross-opening").addEventListener("change", () => {
+  renderMap();
+  renderNeighbors();
+});
 const distance = (a, b) =>
   Math.sqrt(vector(a).reduce((sum, v, i) => sum + (v - vector(b)[i]) ** 2, 0));
 const blockLabels = {
@@ -67,7 +115,10 @@ const blockLabels = {
   decisions: "move choices",
 };
 function alignedBlocks(game) {
-  if (mode !== "strategic") return "Whole-game statistical baseline";
+  if (mode === "baseline") return "Whole-game statistical baseline";
+  if (mode === "player") return "Optimized explicitly for player identity";
+  if (mode === "frozen") return "Frozen neural position-and-move match";
+  if (mode === "temporal") return "Learned temporal embedding match";
   const groups = data.representation.blocks,
     scores = {};
   groups.forEach((group, i) => {
@@ -87,20 +138,37 @@ function alignedBlocks(game) {
 }
 function updateMethod() {
   const r = data.representation;
-  const retention =
-    mode === "strategic"
-      ? r.neighborRetention10
-      : r.baselineNeighborRetention10;
+  const retention = {
+    strategic: r.neighborRetention10,
+    baseline: r.baselineNeighborRetention10,
+    frozen: r.frozenNeighborRetention10,
+    temporal: r.temporalNeighborRetention10,
+    player: r.playerNeighborRetention10,
+  }[mode];
+  const title = {
+    strategic: "Strategic fingerprint",
+    baseline: "Simple statistics",
+    frozen: "Frozen Maia-3 + chosen moves",
+    temporal: "Learned temporal encoder",
+    player: "Player-supervised control",
+  }[mode];
   $("variance").textContent =
-    `${mode === "strategic" ? "Strategic t-SNE" : "Baseline PCA"} map retains ${(retention * 100).toFixed(1)}% of each game's 10 nearest neighbors on average. This measures projection fidelity, not chess usefulness.`;
+    `${title}: the displayed map retains ${(retention * 100).toFixed(1)}% of each game's ten nearest neighbors on average. This measures projection fidelity. Retrieval uses full-dimensional vectors.`;
   document.querySelector(".axis-label").textContent =
-    mode === "strategic" ? "t-SNE →" : "PCA 1 →";
+    data.schemaVersion >= 3
+      ? "t-SNE →"
+      : mode === "strategic"
+        ? "t-SNE →"
+        : "PCA 1 →";
   document.querySelector(".similar-heading > span").textContent =
-    mode === "strategic"
-      ? "Nearest in strategic feature space"
-      : "Nearest in 12-feature space";
-  document.querySelector(".pill").textContent =
-    mode === "strategic" ? "STRATEGIC ATLAS" : "FEATURE BASELINE";
+    `${vector(data.games[0]).length}-dimensional neighbors`;
+  document.querySelector(".pill").textContent = {
+    strategic: "STRATEGIC",
+    baseline: "BASELINE",
+    frozen: "PRETRAINED",
+    temporal: "LEARNED",
+    player: "PLAYER ID",
+  }[mode];
 }
 $("representation").addEventListener("change", (e) => {
   mode = e.target.value;
@@ -224,8 +292,7 @@ function renderMap() {
   const map = $("map");
   map.replaceChildren();
   const near = selected
-    ? visible
-        .filter((g) => g.id !== selected.id)
+    ? neighborCandidates()
         .sort((a, b) => distance(a, selected) - distance(b, selected))
         .slice(0, 3)
     : [];
@@ -366,7 +433,50 @@ function endDrag() {
 $("map").addEventListener("pointerup", endDrag);
 $("map").addEventListener("pointercancel", endDrag);
 
-function selectGame(game, updateHash = true) {
+let selectionRequest = 0;
+const replayChunks = new Map();
+async function selectGame(game, updateHash = true) {
+  const request = ++selectionRequest;
+  if (!game.moves && game.replayChunk) {
+    $("move-label").textContent = "Loading replay…";
+    for (const id of [
+      "first",
+      "prev",
+      "next",
+      "last",
+      "download",
+      "move-slider",
+    ])
+      $(id).disabled = true;
+    try {
+      if (!replayChunks.has(game.replayChunk))
+        replayChunks.set(
+          game.replayChunk,
+          fetch(game.replayChunk)
+            .then((response) => {
+              if (!response.ok) throw new Error("Replay request failed");
+              return response.json();
+            })
+            .catch((error) => {
+              replayChunks.delete(game.replayChunk);
+              throw error;
+            }),
+        );
+      const chunk = await replayChunks.get(game.replayChunk);
+      if (request !== selectionRequest) return;
+      if (!chunk[game.id]) throw new Error("Replay missing from chunk");
+      Object.assign(game, chunk[game.id]);
+    } catch (error) {
+      if (request === selectionRequest) {
+        $("move-label").textContent =
+          "Replay unavailable — select again to retry";
+        announce("Replay could not be loaded. Select the game again to retry.");
+      }
+      return;
+    }
+  }
+  $("download").disabled = false;
+  $("move-slider").disabled = false;
   selected = game;
   ply = 0;
   if (updateHash) history.replaceState(null, "", `#${game.id}`);
@@ -383,10 +493,12 @@ function selectGame(game, updateHash = true) {
           ? "0–1 · Black wins"
           : "Unfinished";
   $("game-eco").textContent = `ECO ${game.eco}`;
-  $("game-length").textContent = `${Math.ceil(game.moves.length / 2)} moves`;
+  $("game-length").textContent =
+    `${Math.ceil((game.moves?.length ?? game.plies) / 2)} moves`;
   $("game-number").textContent =
     `NO. ${String(data.games.indexOf(game) + 1).padStart(3, "0")}`;
   $("move-slider").max = game.moves.length;
+  $("game-split").textContent = game.split ? `${game.split} split` : "";
   $("move-list").replaceChildren();
   game.moves.forEach((move, i) => {
     if (i % 2 === 0) {
@@ -523,8 +635,7 @@ function renderBoard() {
 function renderNeighbors() {
   $("neighbors").replaceChildren();
   if (!selected) return;
-  const neighbors = visible
-    .filter((g) => g.id !== selected.id)
+  const neighbors = neighborCandidates()
     .sort((a, b) => distance(a, selected) - distance(b, selected))
     .slice(0, 3);
   if (!neighbors.length) {
@@ -535,7 +646,7 @@ function renderNeighbors() {
   neighbors.forEach((game) => {
     const b = document.createElement("button");
     b.className = "neighbor";
-    b.innerHTML = `<span class="color-dot" style="background:${color(game)}"></span><span class="neighbor-name">${escapeHTML(game.white.split(",")[0])} – ${escapeHTML(game.black.split(",")[0])}</span><span class="neighbor-meta">${year(game)} · ${escapeHTML(game.eco)}<br>${Math.ceil(game.moves.length / 2)} moves · ${escapeHTML(game.result)}</span><span class="distance">${distance(game, selected).toFixed(2)} distance ↗</span><span class="match-reason">${alignedBlocks(game)}</span>`;
+    b.innerHTML = `<span class="color-dot" style="background:${color(game)}"></span><span class="neighbor-name">${escapeHTML(game.white.split(",")[0])} – ${escapeHTML(game.black.split(",")[0])}</span><span class="neighbor-meta">${year(game)} · ${escapeHTML(game.eco)}<br>${Math.ceil((game.moves?.length ?? game.plies) / 2)} moves · ${escapeHTML(game.result)}</span><span class="distance">${distance(game, selected).toFixed(2)} distance ↗</span><span class="match-reason">${alignedBlocks(game)}</span>`;
     b.addEventListener("click", () => selectGame(game));
     $("neighbors").append(b);
   });
@@ -588,27 +699,104 @@ window.addEventListener("keydown", (e) => {
     setPly(ply - 1);
   }
 });
+function percent(value) {
+  return value == null ? "—" : (value * 100).toFixed(1) + "%";
+}
+async function loadExperiments() {
+  if (data.schemaVersion < 3) return;
+  try {
+    const response = await fetch(data.resultsFile || "experiments.json");
+    if (!response.ok) throw new Error("Experiment report unavailable");
+    const report = await response.json();
+    if (report.display_games !== data.games.length)
+      throw new Error("Report and atlas disagree");
+    const labels = {
+      strategic: "Strategic fingerprint",
+      frozen_position: "Frozen positions",
+      frozen_decision: "Frozen positions + moves",
+      joint_7: "Temporal · seed 7",
+      joint_21: "Temporal · seed 21",
+      joint_42: "Temporal · seed 42",
+      concept_42: "Concept-only temporal",
+      player_42: "Player-supervised control",
+    };
+    $("results-summary").textContent =
+      `${report.samples.toLocaleString()} game perspectives from ${report.unique_games.toLocaleString()} unique games. The comparison uses ${report.query_samples.toLocaleString()} held-out queries against ${report.reference_samples.toLocaleString()} training references. All perspectives of a game share one split.`;
+    const facts = [
+      [report.unique_games.toLocaleString(), "unique source games"],
+      [report.split_samples.train.toLocaleString(), "training perspectives"],
+      [report.display_games.toLocaleString(), "games to explore"],
+      ["0", "canonical games shared across splits"],
+    ];
+    $("experiment-facts").innerHTML = facts
+      .map(
+        ([number, label]) =>
+          `<div class="experiment-fact"><strong>${number}</strong><span>${label}</span></div>`,
+      )
+      .join("");
+    $("experiment-rows").replaceChildren();
+    for (const [key, result] of Object.entries(report.results)) {
+      const row = document.createElement("tr");
+      if (key === report.selected_temporal_run)
+        row.className = "selected-model";
+      const ci = result.standard.player_top1_ci95;
+      row.innerHTML = `<td>${escapeHTML(labels[key] || key)}${key === report.selected_temporal_run ? " · shown on map" : ""}</td><td>${percent(result.standard.player_top1)}</td><td>${percent(ci[0])}–${percent(ci[1])}</td><td>${percent(result.cross_eco.player_top1)}</td><td>${percent(result.modern_cross_eco?.player_top1)}</td><td>${percent(result.standard.same_eco_top1)}</td>`;
+      $("experiment-rows").append(row);
+    }
+    const seeds = Object.entries(report.results)
+      .filter(([key]) => key.startsWith("joint_"))
+      .map(([, r]) => r.standard.player_top1);
+    const mean = seeds.reduce((a, b) => a + b, 0) / seeds.length;
+    const sd = Math.sqrt(
+      seeds.reduce((a, b) => a + (b - mean) ** 2, 0) /
+        Math.max(1, seeds.length - 1),
+    );
+    const random = report.results.strategic.standard.random_player_top1;
+    $("experiment-notes").innerHTML =
+      `<div class="experiment-note"><strong>Repeatability across three seeds</strong>Temporal player retrieval: ${percent(mean)} mean, ${(sd * 100).toFixed(1)} percentage points standard deviation. The displayed model was selected by validation loss. Random-reference top-1 is about ${percent(random)}.</div><div class="experiment-note"><strong>Check the shortcuts</strong>A separate classifier using year, rating, ECO code, color and game length identifies players at ${percent(report.metadata_player_classifier_accuracy)} accuracy. It is a different task, but shows why player identification alone cannot establish style.</div>`;
+    const comparison =
+      report.comparisons_to_strategic?.[report.selected_temporal_run]?.standard;
+    if (comparison) {
+      const card = document.createElement("div");
+      card.className = "experiment-note";
+      const pp = (value) => (value >= 0 ? "+" : "") + (value * 100).toFixed(1);
+      card.innerHTML = `<strong>Paired comparison on fresh held-out groups</strong>The displayed temporal model changes player top-1 by ${pp(comparison.mean_difference)} percentage points versus the strategic baseline; the grouped 95% interval is ${pp(comparison.ci95[0])} to ${pp(comparison.ci95[1])} points. An interval spanning zero does not establish a gain. The audit excludes ${report.benchmark.excluded_exploratory_game_groups.toLocaleString()} previously explored game groups.`;
+      $("experiment-notes").append(card);
+    }
+  } catch (error) {
+    console.error(error);
+    $("results-summary").textContent =
+      "The experiment report could not be loaded. Refresh to retry.";
+  }
+}
+
 async function start() {
   try {
     const response = await fetch("atlas.json");
     if (!response.ok)
       throw new Error(`Dataset request returned ${response.status}`);
     data = await response.json();
-    if (data.schemaVersion !== 2 || !data.games.length)
+    if (![2, 3].includes(data.schemaVersion) || !data.games.length)
       throw new Error("Unsupported or empty dataset");
+    mode = data.schemaVersion >= 3 ? "temporal" : "strategic";
+    $("representation").value = mode;
+    for (const option of $("representation").options) {
+      option.disabled = !data.games[0][modeFields[option.value][0]];
+    }
     enabled = new Set(data.players);
     visible = [...data.games];
     renderPlayers();
     updateMethod();
     $("dataset-note").textContent =
       `${data.games.length} games · ${data.players.length} collections · Reproducible by design`;
-    selectGame(
+    await selectGame(
       data.games.find((g) => g.id === selectedId) ||
         data.games.find((g) => g.player === "Tal") ||
         data.games[0],
       false,
     );
     filter();
+    loadExperiments();
   } catch (error) {
     console.error(error);
     $("map-status").textContent = "The collection could not be loaded.";

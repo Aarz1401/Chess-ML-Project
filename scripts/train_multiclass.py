@@ -63,7 +63,7 @@ from evaluation import (
     retrieval_metrics,
 )
 from model import ChessStyleTransformer
-from tensor_cache import CachedChessDataset, load_manifest
+from tensor_cache import CachedChessDataset, load_manifest, validate_cache
 
 
 def set_seed(seed: int) -> None:
@@ -372,7 +372,10 @@ def load_cached_datasets(args: argparse.Namespace) -> tuple[Dataset, Dataset, Da
     """Load precomputed splits and align label globals with the manifest."""
 
     cache_dir = Path(args.cache_dir)
-    manifest = load_manifest(cache_dir)
+    manifest = validate_cache(cache_dir, Path(args.data_dir))
+    for key in ("sequence_length", "skip_plies", "target_moves_only"):
+        setattr(args, key, manifest[key])
+    args.no_board_flip = not manifest["board_flip"]
     set_label_globals(list(manifest["labels"]))
     print(f"Loaded tensor cache {cache_dir} with labels {manifest['labels']}")
     print(f"Cache counts: {manifest['counts']}")

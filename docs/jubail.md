@@ -1,5 +1,9 @@
 # Jubail workflow
 
+For the implemented atlas pipeline, use the [current runbook](atlas-jubail-runbook.md)
+and [measured results](atlas-results-2026-10-28.md). The older 84-plane workflow below
+is retained as a separate comparison.
+
 For the atlas's next learned representation, start with the
 [representation roadmap and live readiness findings](representation-roadmap.md).
 It includes a separate `scripts/jubail_gpu_probe.slurm` environment check and
