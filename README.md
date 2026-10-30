@@ -26,7 +26,6 @@ Read the [measured October 30 diagnostics](docs/moment-results-2026-10-30.md).
 - [Measured October 28 results](docs/atlas-results-2026-10-28.md)
 - [Jubail reproduction runbook](docs/atlas-jubail-runbook.md)
 - [Website setup and methodology](website/README.md)
-- [Interview explanation](docs/game-atlas-interview.md)
 
 The learned models have not established a reliable gain over the handcrafted
 baseline on held-out player retrieval. The results and uncertainty are published

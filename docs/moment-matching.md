@@ -149,5 +149,5 @@ npm test --prefix website
 ~~~
 
 This round completes the engineering scope. The next evidence requires human
-judgments, not another backbone or infrastructure layer. Keep the product and
-the original negative results together in the interview explanation.
+judgments, not another backbone or infrastructure layer. Keep the original
+game-level results alongside the position-level diagnostics.

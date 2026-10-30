@@ -109,7 +109,6 @@ experiment's reference/query protocol.
 - [Full measured report](../website/dist/experiments.json)
 - [Public corpus manifest](../website/dist/corpus-manifest.json)
 - [Jubail reproduction runbook](atlas-jubail-runbook.md)
-- [Pipeline and objective explanation](game-atlas-interview.md)
 
 The public report records the corpus/checkpoint IDs, source hashes, train/val/test
 counts, GPU measurements, model selection rule, and cache-integrity seal. Local
