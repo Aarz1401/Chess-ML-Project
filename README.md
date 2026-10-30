@@ -17,6 +17,12 @@ python3 -m http.server 8765 --directory website/dist
 Open <http://localhost:8765>. Serving the site needs only a static HTTP server.
 Node is optional and used for development tests.
 
+The final focused round adds **Find a moment** at `/moments.html`: paired
+position boards, transparent shared facts, historical continuations, and 100
+prepared blinded relevance comparisons. Independent human judgments are pending.
+See the [position-matching protocol](docs/moment-matching.md).
+Read the [measured October 30 diagnostics](docs/moment-results-2026-10-30.md).
+
 - [Measured October 28 results](docs/atlas-results-2026-10-28.md)
 - [Jubail reproduction runbook](docs/atlas-jubail-runbook.md)
 - [Website setup and methodology](website/README.md)

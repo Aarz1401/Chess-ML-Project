@@ -79,6 +79,15 @@ player-supervised control, the modern/different-ECO cohort, and uncertainty.
 
 ## What to be able to defend
 
+The final focused round adds position-level retrieval. It reuses the sealed
+Jubail Maia cache, compares 89D current-position features with 64D reduced neural
+position tokens, and makes the match inspectable on paired replay boards.
+Chosen and future moves are excluded from these position vectors. Its 100
+prepared method-blinded trials separate 20 development from 80 audit queries;
+independent human judgments remain pending. Read the
+[focused-round protocol](moment-matching.md) for input boundaries, CPU fallback,
+engine limits, and the scoring procedure.
+
 - Trace a single game through IDs, orientation, sampled history, tokens and vectors.
 - Explain why duplicate grouping happens before splitting.
 - Distinguish pretrained features, learned pooling and engineered labels.

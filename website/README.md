@@ -3,6 +3,11 @@
 A static explorer of 1,000 real games with five representation modes, lazy board
 replays, different-ECO neighbors, feature overlays, and measured Jubail results.
 
+`moments.html` adds position-level recommendations with paired boards, shared
+facts, historical continuations, and 100 prepared method-blinded comparisons.
+See the [focused-round protocol](../docs/moment-matching.md). Human relevance
+judgments remain pending.
+
 ## Serve and test
 
 From the repository root:
@@ -18,6 +23,7 @@ database or model server. Node is only a development-test dependency:
 npm ci --prefix website --ignore-scripts
 npm test --prefix website
 .venv/bin/python website/scripts/validate_atlas.py
+.venv/bin/python website/scripts/validate_moments.py
 .venv/bin/python -m unittest discover -s tests -v
 ~~~
 
@@ -55,6 +61,11 @@ dist/replays/ contains chunks of 25 games with SAN moves, FENs and PGN text.
 A replay chunk loads on selection and is cached in the browser session.
 
 dist/experiments.json is the measured grouped audit.
+dist/moments.json contains the sampled position index and two vector types.
+dist/moment-review.json contains the blinded trials, without method assignments.
+dist/moment-report.json records the new diagnostics and actual execution host.
+Anonymous judgments stay in local storage until exported by the reviewer; there
+is no server-side collection. The offline review key is excluded from dist.
 dist/corpus-manifest.json records source hashes, counts, missing metadata and
 split sizes. The source has no time-control headers; no matched-time-control
 claim is made. Browser neighbors are searched within the displayed/filter-
@@ -86,8 +97,8 @@ dist/ works on a static web host. URL fragments identify selected games.
 self-hosters should create their own hosting configuration.
 
 The newly added website software is MIT licensed; see LICENSE. That license
-excludes PGN-derived data, replay chunks, third-party fonts, pretrained models
-and pre-existing repository code. Original PGN collection download URLs and
+excludes PGN-derived data (including moment exports and replay chunks),
+third-party fonts, pretrained models and pre-existing repository code. Original PGN collection download URLs and
 redistribution terms are not documented; see DATA.md. Maia-3 is a separately
 licensed upstream dependency with pinned source and checkpoint revisions.
 

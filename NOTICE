@@ -3,6 +3,7 @@ Game Atlas original additions (MIT)
 
 src/game_identity.py
 src/atlas_model.py
+src/moment_matching.py
 
 scripts/prepare_atlas_corpus.py
 scripts/extract_atlas_embeddings.py
@@ -16,9 +17,14 @@ scripts/download_atlas_model.py
 scripts/jubail_atlas_cpu.slurm
 scripts/jubail_atlas_gpu.slurm
 scripts/submit_atlas_jubail.sh
+scripts/build_moments.py
+scripts/evaluate_moment_judgments.py
+scripts/jubail_moments.slurm
 
 tests/test_atlas_pipeline.py
 tests/check_atlas_ui.cjs
+tests/test_moments.py
+tests/check_moments_ui.cjs
 
 Original website software is covered separately by website/LICENSE.
 Existing source files retain their applicable notices and are not included in
@@ -39,3 +45,7 @@ See website/DATA.md. The generated experiment report contains this project's
 measurements; it does not change source-data or model licensing.
 
 Other dependencies retain their own licenses.
+
+Stockfish annotations use the official Stockfish 17.1 release, under GPL-3.0:
+https://github.com/official-stockfish/Stockfish/releases/tag/sf_17.1
+Neither its executable nor source is bundled into the static website.

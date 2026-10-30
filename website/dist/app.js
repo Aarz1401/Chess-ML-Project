@@ -555,6 +555,7 @@ async function selectGame(game, updateHash = true) {
     )
     .join("");
   $("share").textContent = "Copy game link ↗";
+  $("moment-link").href = `moments.html#${game.id}`;
   $("tooltip").hidden = true;
   renderBoard();
   renderMap();

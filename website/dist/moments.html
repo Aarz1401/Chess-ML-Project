@@ -1,0 +1,286 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta
+      name="description"
+      content="Compare chess positions, inspect shared patterns, and help evaluate game recommendations."
+    />
+    <title>Find a moment — Game Atlas</title>
+    <link rel="stylesheet" href="styles.css" />
+    <link rel="stylesheet" href="moments.css" />
+    <script defer src="moments.js"></script>
+  </head>
+  <body class="moments-page">
+    <header class="moment-header">
+      <a class="brand" href="index.html"
+        ><span class="brand-mark">♞</span
+        ><span
+          >game atlas<span class="brand-sub">A FIELD GUIDE TO CHESS</span></span
+        ></a
+      >
+      <nav aria-label="Main navigation">
+        <a href="index.html">Game map ↗</a
+        ><a href="#review">Blind comparison ↓</a
+        ><a href="#evidence">Evidence ↓</a>
+      </nav>
+    </header>
+    <main class="moment-main">
+      <section class="moment-intro">
+        <div class="eyebrow">DIFFERENT GAMES. FAMILIAR POSITIONS.</div>
+        <h1>Find a moment<br />you can learn from.</h1>
+        <p>
+          A game’s average can hide its most useful moments. Compare specific
+          positions, see what they share, and follow what actually happened
+          next.
+        </p>
+        <p id="moment-status" role="status" aria-live="polite">
+          Loading the position collection…
+        </p>
+      </section>
+      <section class="moment-controls" aria-label="Position search controls">
+        <label
+          >Source game<select id="moment-game" disabled>
+            <option>Loading…</option>
+          </select></label
+        >
+        <label>Sampled moment<select id="moment-ply" disabled></select></label>
+        <label
+          >Match using<select id="moment-method">
+            <option value="strategic">Strategic features · transparent</option>
+            <option value="neural">Frozen neural position · Maia</option>
+          </select></label
+        >
+        <label class="check-label"
+          ><input id="moment-cross" type="checkbox" checked /> Different exact
+          ECO code</label
+        >
+        <button id="moment-surprise" class="moment-primary" disabled>
+          Another moment ↗
+        </button>
+      </section>
+      <div class="moment-workspace">
+        <section class="moment-card" aria-labelledby="source-heading">
+          <div class="eyebrow">01 / YOUR STARTING POINT</div>
+          <h2 id="source-heading">Source position</h2>
+          <p id="source-meta" class="moment-meta"></p>
+          <div
+            id="source-board"
+            class="moment-board"
+            role="img"
+            aria-label="Source chess position"
+          ></div>
+          <p id="source-turn" class="moment-meta"></p>
+          <div class="continuation">
+            <button id="source-prev" aria-label="Previous source move">←</button
+            ><span id="source-step" aria-live="polite">Starting moment</span
+            ><button id="source-next" aria-label="Next source move">→</button>
+          </div>
+          <div id="source-eval" class="engine-note"></div>
+          <a id="source-game-link" href="index.html">Replay full game ↗</a>
+        </section>
+        <section class="moment-card" aria-labelledby="match-heading">
+          <div class="eyebrow">02 / A RELATED MOMENT</div>
+          <h2 id="match-heading">Recommended position</h2>
+          <p id="match-meta" class="moment-meta"></p>
+          <div
+            id="match-board"
+            class="moment-board"
+            role="img"
+            aria-label="Matched chess position"
+          ></div>
+          <p id="match-turn" class="moment-meta"></p>
+          <div class="continuation">
+            <button id="match-prev" aria-label="Previous matched move">←</button
+            ><span id="match-step" aria-live="polite">Starting moment</span
+            ><button id="match-next" aria-label="Next matched move">→</button>
+          </div>
+          <div id="match-eval" class="engine-note"></div>
+          <a id="match-game-link" href="index.html">Replay full game ↗</a>
+        </section>
+        <aside class="moment-card match-explanation">
+          <div class="eyebrow">03 / LOOK CLOSER</div>
+          <h2>What connects them?</h2>
+          <p class="moment-meta">
+            Facts below describe the two starting positions. They are
+            comparisons, not explanations of the neural model’s reasoning.
+          </p>
+          <div id="moment-reasons"></div>
+          <h3>Other games to study</h3>
+          <div id="moment-neighbors"></div>
+          <p class="moment-meta">
+            One position per reference game. Recommendations use
+            training-reference games and full vectors. Neither a small distance
+            nor a shared pattern guarantees a useful lesson.
+          </p>
+        </aside>
+      </div>
+      <section
+        id="review"
+        class="moment-section"
+        aria-labelledby="review-heading"
+      >
+        <div class="eyebrow">HELP TEST THE IDEA</div>
+        <h2 id="review-heading">Which position is more relevant?</h2>
+        <p>
+          <a href="moments.html?review=1#review">Open a review-only view ↗</a>
+        </p>
+        <p>
+          Compare pawn structure, piece activity, king safety, and possible
+          plans. Choose the candidate that would be more useful when studying
+          the source. Methods, player names, engine scores and continuations are
+          hidden here. “Tie” and “neither” are valid answers.
+        </p>
+        <div class="review-toolbar">
+          <label
+            >Evaluation set<select id="review-partition">
+              <option value="development">Development · 20 comparisons</option>
+              <option value="audit">Reserved audit · 80 comparisons</option>
+            </select></label
+          ><label
+            >Chess experience<select id="review-experience">
+              <option value="unspecified">Prefer not to say</option>
+              <option value="beginner">Beginner</option>
+              <option value="club">Club player</option>
+              <option value="advanced">Advanced / titled</option>
+            </select></label
+          ><span id="review-progress" role="status" aria-live="polite"
+            >Loading comparisons…</span
+          >
+        </div>
+        <p id="audit-warning" class="evidence-note" hidden>
+          The audit is reserved for final evaluation after development decisions
+          are frozen. If you develop the system, collect these judgments from an
+          independent reviewer.
+        </p>
+        <div class="review-boards">
+          <article>
+            <h3>Source</h3>
+            <div
+              id="review-query"
+              class="moment-board"
+              role="img"
+              aria-label="Review source position"
+            ></div>
+            <p id="review-query-turn" class="moment-meta"></p>
+          </article>
+          <article>
+            <h3>Candidate A</h3>
+            <div
+              id="review-a"
+              class="moment-board"
+              role="img"
+              aria-label="Review candidate A"
+            ></div>
+            <p id="review-a-turn" class="moment-meta"></p>
+          </article>
+          <article>
+            <h3>Candidate B</h3>
+            <div
+              id="review-b"
+              class="moment-board"
+              role="img"
+              aria-label="Review candidate B"
+            ></div>
+            <p id="review-b-turn" class="moment-meta"></p>
+          </article>
+        </div>
+        <div
+          class="review-actions"
+          role="group"
+          aria-label="Strategic relevance judgment"
+        >
+          <button data-judgment="A">A is more relevant</button
+          ><button data-judgment="B">B is more relevant</button
+          ><button data-judgment="tie">Equally relevant</button
+          ><button data-judgment="neither">Neither is useful</button>
+        </div>
+        <div class="review-toolbar">
+          <button id="review-back">← Previous</button
+          ><button id="review-skip">Skip →</button
+          ><button id="review-export" class="moment-primary">
+            Export judgments ↓</button
+          ><button id="review-clear">Clear local judgments</button>
+        </div>
+        <p class="moment-meta">
+          Responses stay in this browser until you export them. No account,
+          name, rating or game upload is requested. Exported files include an
+          anonymous browser ID, choices, experience category and timestamps. The
+          sample compares methods only where their top recommendations disagree.
+        </p>
+      </section>
+      <section
+        id="evidence"
+        class="moment-section"
+        aria-labelledby="evidence-heading"
+      >
+        <div class="eyebrow">THE FINAL FOCUSED ROUND</div>
+        <h2 id="evidence-heading">Evidence before a bigger model.</h2>
+        <div id="moment-facts" class="experiment-facts"></div>
+        <p id="moment-evidence">Loading the measured position diagnostics…</p>
+        <div class="results-table-wrap">
+          <table class="results-table">
+            <thead>
+              <tr>
+                <th>Method</th>
+                <th>Median evaluation gap</th>
+                <th>Median material gap</th>
+                <th>Same-player neighbor</th>
+              </tr>
+            </thead>
+            <tbody id="moment-diagnostics"></tbody>
+          </table>
+        </div>
+        <p class="evidence-note">
+          These are descriptive diagnostics, not a human relevance score.
+          Matching material is partly built into the strategic features. Similar
+          engine evaluations alone do not imply similar plans. Fixed-budget
+          Stockfish annotations are approximate.
+        </p>
+        <p id="moment-human-status"></p>
+        <details>
+          <summary>Sampling, model inputs and evaluation protocol</summary>
+          <p>
+            Up to six target-to-move positions per game, sampled between plies
+            24 and 100. The strategic method uses 89 current-position features.
+            The neural method uses frozen Maia-3 pooled square tokens with
+            previous legal position history, reduced to 64 dimensions. The
+            chosen move and future moves are excluded. Scaling and PCA are
+            fitted only on training games.
+          </p>
+          <p>
+            Diagnostics use one query per test game and training references,
+            excluding the same game, exact/mirrored transpositions, and matching
+            exact ECO codes. The 100 blinded trials have distinct query games:
+            20 for development and 80 reserved for a final audit. Audit
+            responses should be collected independently after freezing the
+            method. Human results are pending; no superiority claim is made.
+          </p>
+          <p>
+            Boards retain their actual piece colors, with the side to move at
+            the bottom. Facts refer to the sampled starting position.
+            Continuations show the historical moves, not an engine-generated
+            plan. Original collection licensing and pretrained-data overlap
+            remain uncertain.
+          </p>
+        </details>
+        <p>
+          <a href="moment-report.json" download
+            >Download measured diagnostics ↓</a
+          >
+          ·
+          <a
+            href="https://github.com/Aarz1401/Chess-ML-Project/blob/main/docs/moment-matching.md"
+            target="_blank"
+            rel="noreferrer"
+            >Reproduce this round ↗</a
+          >
+        </p>
+      </section>
+      <footer class="moment-footer">
+        GAME ATLAS · Inspect the match. Follow the game. Question the metric.
+      </footer>
+    </main>
+  </body>
+</html>

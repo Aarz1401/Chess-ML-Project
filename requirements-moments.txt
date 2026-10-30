@@ -1,0 +1,5 @@
+# CPU-only fitting/annotations from an already exported, sealed Maia cache.
+# The measured local run used Python 3.12.3. PyTorch is not needed for this step.
+numpy==2.4.4
+scikit-learn==1.8.0
+chess==1.11.2

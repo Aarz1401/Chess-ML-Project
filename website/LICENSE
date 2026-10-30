@@ -21,5 +21,6 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 
 Scope: new source code and documentation under website/. This license does
-not apply to dist/atlas.json, dist/replays/, underlying PGN collections, third-party fonts,
+not apply to dist/atlas.json, dist/moments.json, dist/moment-review.json,
+dist/replays/, underlying PGN collections, third-party fonts,
 or the pre-existing repository code.
