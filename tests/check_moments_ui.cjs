@@ -13,7 +13,10 @@ const review = JSON.parse(
 );
 const dom = new JSDOM(
   fs.readFileSync(path.join(directory, "moments.html"), "utf8"),
-  { url: "http://atlas.test/moments.html", runScripts: "outside-only" },
+  {
+    url: "http://atlas.test/Chess-ML-Project/moments.html",
+    runScripts: "outside-only",
+  },
 );
 const w = dom.window,
   $ = (id) => w.document.getElementById(id),
@@ -22,7 +25,10 @@ w.console.error = (...args) => errors.push(args.map(String).join(" "));
 w.fetch = async (name) => {
   const file = path.join(
     directory,
-    new URL(String(name), "http://atlas.test/").pathname.slice(1),
+    new URL(
+      String(name),
+      "http://atlas.test/Chess-ML-Project/",
+    ).pathname.replace(/^\/Chess-ML-Project\//, ""),
   );
   return {
     ok: fs.existsSync(file),
@@ -53,6 +59,10 @@ const wait = async () => new Promise((r) => setTimeout(r, 100));
     64,
   );
   assert.equal($("moment-game").options.length, data.games.length);
+  assert.match(
+    w.document.querySelector('#source-board img[src$="wK.svg"]').src,
+    /\/Chess-ML-Project\/assets\/pieces\/wK\.svg$/,
+  );
   assert.match(
     $("moment-human-status").textContent,
     /0 independently collected/,

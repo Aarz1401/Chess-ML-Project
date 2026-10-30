@@ -1,28 +1,28 @@
 "use strict";
 const $ = (id) => document.getElementById(id);
 const COLORS = [
-  "#8c9a60",
-  "#c47c58",
-  "#718ca6",
-  "#b7a25a",
-  "#9c86ac",
-  "#c28a98",
-  "#5f998c",
-  "#6d8061",
+  "#315b74",
+  "#a0553a",
+  "#597b59",
+  "#947a35",
+  "#775a80",
+  "#a25e72",
+  "#2d807b",
+  "#686b72",
 ];
 const PIECES = {
-  k: "♚",
-  q: "♛",
-  r: "♜",
-  b: "♝",
-  n: "♞",
-  p: "♟",
-  K: "♚",
-  Q: "♛",
-  R: "♜",
-  B: "♝",
-  N: "♞",
-  P: "♟",
+  K: "wK",
+  Q: "wQ",
+  R: "wR",
+  B: "wB",
+  N: "wN",
+  P: "wP",
+  k: "bK",
+  q: "bQ",
+  r: "bR",
+  b: "bB",
+  n: "bN",
+  p: "bP",
 };
 const PIECE_NAMES = {
   k: "king",
@@ -306,7 +306,7 @@ function renderMap() {
           y1: y,
           x2: nx,
           y2: ny,
-          stroke: "#99a58d",
+          stroke: "#899791",
           "stroke-width": 0.8,
           "stroke-dasharray": "3 5",
           opacity: 0.65,
@@ -339,7 +339,7 @@ function renderMap() {
       r: isSelected ? 6 : 4.3,
       fill: color(g),
       opacity: isSelected ? 1 : 0.74,
-      stroke: isSelected ? "#fcfcf8" : "#fcfcf8",
+      stroke: "#fffefa",
       "stroke-width": isSelected ? 2 : 1,
       class: "map-dot",
       tabindex: 0,
@@ -483,7 +483,7 @@ async function selectGame(game, updateHash = true) {
   $("white-name").textContent = short(game.white);
   $("black-name").textContent = short(game.black);
   $("game-meta").textContent =
-    `${game.event} · ${game.date.replaceAll(".", " / ")}`;
+    `${game.event === "?" ? "Event not recorded" : game.event} · ${/^\d{4}/.test(game.date) ? game.date.replace(/\.?\?+.*$/, "").replaceAll(".", "-") : "Date not recorded"}`;
   $("game-result").textContent =
     game.result === "1/2-1/2"
       ? "½–½ · Draw"
@@ -561,6 +561,14 @@ async function selectGame(game, updateHash = true) {
   renderMap();
   renderNeighbors();
   announce(`Selected ${game.white} versus ${game.black}, ${year(game)}.`);
+  if (updateHash && window.matchMedia?.("(max-width: 760px)")?.matches) {
+    document.querySelector(".detail-panel").scrollIntoView({
+      behavior: window.matchMedia("(prefers-reduced-motion: reduce)").matches
+        ? "instant"
+        : "smooth",
+      block: "start",
+    });
+  }
 }
 function setPly(value) {
   if (!selected) return;
@@ -583,7 +591,14 @@ function renderBoard() {
       file = "abcdefgh"[i % 8],
       square = document.createElement("div");
     square.className = `square ${(Math.floor(i / 8) + (i % 8)) % 2 ? "dark" : ""} ${piece ? (piece === piece.toUpperCase() ? "light-piece" : "dark-piece") : ""}`;
-    square.textContent = PIECES[piece] || "";
+    if (piece) {
+      const image = document.createElement("img");
+      image.src = "assets/pieces/" + PIECES[piece] + ".svg";
+      image.alt = "";
+      image.className = "chess-piece";
+      image.draggable = false;
+      square.append(image);
+    }
     square.setAttribute("aria-hidden", "true");
     if (i % 8 === 0) {
       const coord = document.createElement("span");
@@ -779,7 +794,7 @@ async function start() {
     data = await response.json();
     if (![2, 3].includes(data.schemaVersion) || !data.games.length)
       throw new Error("Unsupported or empty dataset");
-    mode = data.schemaVersion >= 3 ? "temporal" : "strategic";
+    mode = "strategic";
     $("representation").value = mode;
     for (const option of $("representation").options) {
       option.disabled = !data.games[0][modeFields[option.value][0]];
@@ -789,7 +804,7 @@ async function start() {
     renderPlayers();
     updateMethod();
     $("dataset-note").textContent =
-      `${data.games.length} games · ${data.players.length} collections · Reproducible by design`;
+      `${data.games.length} games · ${data.players.length} collections · Open-source chess research`;
     await selectGame(
       data.games.find((g) => g.id === selectedId) ||
         data.games.find((g) => g.player === "Tal") ||

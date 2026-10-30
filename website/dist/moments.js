@@ -4,18 +4,18 @@ if (new URLSearchParams(location.search).get("review") === "1")
   document.body.classList.add("review-only");
 const $ = (id) => document.getElementById(id);
 const PIECES = {
-  K: "♔",
-  Q: "♕",
-  R: "♖",
-  B: "♗",
-  N: "♘",
-  P: "♙",
-  k: "♚",
-  q: "♛",
-  r: "♜",
-  b: "♝",
-  n: "♞",
-  p: "♟",
+  K: "wK",
+  Q: "wQ",
+  R: "wR",
+  B: "wB",
+  N: "wN",
+  P: "wP",
+  k: "bK",
+  q: "bQ",
+  r: "bR",
+  b: "bB",
+  n: "bN",
+  p: "bP",
 };
 const NAMES = {
   k: "king",
@@ -91,7 +91,14 @@ function board(id, fen, orientation) {
     const piece = cells[i],
       square = document.createElement("div");
     square.className = `moment-square ${(Math.floor(i / 8) + (i % 8)) % 2 ? "dark" : ""} ${piece ? (piece === piece.toUpperCase() ? "white-piece" : "black-piece") : ""}`;
-    square.textContent = PIECES[piece] || "";
+    if (piece) {
+      const image = document.createElement("img");
+      image.src = "assets/pieces/" + PIECES[piece] + ".svg";
+      image.alt = "";
+      image.className = "chess-piece";
+      image.draggable = false;
+      square.append(image);
+    }
     const displayIndex = order.indexOf(i);
     if (displayIndex >= 56) {
       const c = document.createElement("small");

@@ -5,88 +5,106 @@
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <meta
       name="description"
-      content="Explore the shape of chess. An open-source atlas of real games, playable move by move, with transparent similarity search."
+      content="Explore 1,000 chess games, compare game representations and study related positions. An open-source chess research tool."
     />
-    <meta name="theme-color" content="#f5f4ed" />
-    <title>Game Atlas — Explore the shape of chess</title>
-    <link
-      rel="icon"
-      href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='16' fill='%232a4037'/%3E%3Ctext x='8' y='50' font-size='52' fill='%23f5f4ed'%3E♞%3C/text%3E%3C/svg%3E"
-    />
+    <meta name="theme-color" content="#f7f6f2" />
+    <title>Game Atlas — Chess games, mapped</title>
+    <link rel="canonical" href="https://aarz1401.github.io/Chess-ML-Project/" />
+    <link rel="icon" href="assets/atlas-mark.svg" type="image/svg+xml" />
     <link rel="stylesheet" href="styles.css" />
     <script defer src="app.js"></script>
   </head>
   <body>
-    <aside class="sidebar">
-      <a class="brand" href="#" aria-label="Game Atlas home"
-        ><span class="brand-mark">♞</span
-        ><span
-          >game atlas<span class="brand-sub">A FIELD GUIDE TO CHESS</span></span
-        ></a
+    <a class="skip-link" href="#workspace">Skip to explorer</a>
+    <header class="site-header">
+      <a class="brand" href="index.html" aria-label="Game Atlas home"
+        ><img
+          class="brand-mark"
+          src="assets/atlas-mark.svg"
+          width="30"
+          height="30"
+          alt=""
+        /><span>Game Atlas</span></a
       >
-      <div class="side-rule"></div>
-      <div class="nav-active">
-        <span>◎</span> Explore the atlas <span class="tiny">01</span>
-      </div>
-      <button class="nav-link" id="about-side">
-        <span>⌁</span> How it works
-      </button>
-      <a class="nav-link" href="moments.html"
-        ><span>♧</span> Find a moment <span class="tiny">NEW</span></a
-      >
-      <div class="side-section">
-        <div class="section-label">
-          REFERENCE PLAYERS <button id="reset-players">Reset</button>
-        </div>
-        <div id="players" aria-label="Filter reference players"></div>
-      </div>
-      <div class="side-note">
-        <span class="live-dot"></span> An open research project
-        <p>
-          Real games. Inspectable features.<br />A little curiosity goes a long
-          way.
-        </p>
-      </div>
+      <nav class="site-nav" aria-label="Main navigation">
+        <a href="index.html" aria-current="page">Game atlas</a
+        ><a href="moments.html">Position finder</a
+        ><a href="#research">Research</a>
+      </nav>
       <a
-        class="github-link"
+        class="source-link"
         href="https://github.com/Aarz1401/Chess-ML-Project"
         target="_blank"
         rel="noreferrer"
-        >Source on GitHub <span>↗</span></a
+        >GitHub <span aria-hidden="true">↗</span></a
       >
-    </aside>
-    <main>
-      <header class="topbar">
-        <span>THE CHESS COLLECTION <span class="divider">/</span> EXPLORER</span
-        ><button id="about-top">About this atlas <span>↗</span></button>
-      </header>
+    </header>
+    <main class="atlas-main">
       <section class="intro">
         <div>
-          <div class="eyebrow">
-            <span></span> DIFFERENT PLAYERS. SHARED PATTERNS.
-          </div>
-          <h1>Every game has a shape.</h1>
+          <div class="eyebrow">01 / THE GAME COLLECTION</div>
+          <h1>Chess games, mapped.</h1>
           <p>
-            Wander through chess history. Find familiar patterns.<br
-              class="desktop-br"
-            />
-            Discover your next game to study.
+            Explore the collection, replay a game, and compare the patterns
+            behind its nearest neighbors.
           </p>
         </div>
-        <button class="primary" id="random">Surprise me <span>↗</span></button>
+        <dl class="collection-stats" aria-label="Collection">
+          <div>
+            <dt>Games</dt>
+            <dd>1,000</dd>
+          </div>
+          <div>
+            <dt>Players</dt>
+            <dd>8</dd>
+          </div>
+          <div>
+            <dt>Representations</dt>
+            <dd>5</dd>
+          </div>
+        </dl>
       </section>
-      <div class="workspace">
+      <div class="workspace" id="workspace" tabindex="-1">
+        <aside class="collection-panel" aria-label="Collection filters">
+          <div class="section-label">
+            COLLECTION <button id="reset-players">Reset</button>
+          </div>
+          <p class="filter-hint">Toggle a player to filter the map.</p>
+          <div id="players" aria-label="Filter reference players"></div>
+          <div class="collection-note">
+            <span class="section-label">READING THE MAP</span>
+            <p>
+              Each point is a complete game. Nearby points share patterns in the
+              selected representation.
+            </p>
+            <p>
+              The map is a projection; recommendations use the full vectors.
+            </p>
+            <button id="about-side" class="text-link">
+              About the methods ↗
+            </button>
+          </div>
+        </aside>
         <section class="atlas-panel" aria-labelledby="atlas-title">
           <div class="panel-heading">
             <div>
               <h2 id="atlas-title">
-                The game landscape <span class="pill">STRATEGIC ATLAS</span>
+                Game landscape <span class="pill">STRATEGIC ATLAS</span>
               </h2>
-              <p>One dot, one game. Select a point to explore.</p>
+              <p>Select a game to replay it. Scroll to zoom; drag to pan.</p>
             </div>
-            <span class="count"
-              ><strong id="visible-count">—</strong> games</span
-            >
+            <div class="map-actions">
+              <span class="count"
+                ><strong id="visible-count">—</strong> games</span
+              ><button class="secondary-button" id="random">Random game</button
+              ><button
+                id="about-top"
+                class="icon-button"
+                aria-label="About the map"
+              >
+                ?
+              </button>
+            </div>
           </div>
           <div class="representation-row">
             <label for="representation">Representation</label
@@ -108,7 +126,25 @@
           </div>
           <div class="toolbar">
             <label class="search"
-              ><span aria-hidden="true">⌕</span
+              ><svg
+                width="16"
+                height="16"
+                viewBox="0 0 20 20"
+                fill="none"
+                aria-hidden="true"
+              >
+                <circle
+                  cx="8.5"
+                  cy="8.5"
+                  r="5.5"
+                  stroke="currentColor"
+                  stroke-width="1.5"
+                />
+                <path
+                  d="m13 13 4 4"
+                  stroke="currentColor"
+                  stroke-width="1.5"
+                /></svg
               ><input
                 id="search"
                 type="search"
@@ -135,7 +171,6 @@
           </div>
           <div class="map-wrap" id="map-wrap">
             <div class="map-caption">
-              <span class="live-dot"></span>
               <span id="map-status">Loading the collection…</span>
             </div>
             <svg
@@ -170,8 +205,8 @@
           </div>
           <div class="similar-section">
             <div class="similar-heading">
-              <h3>In the same neighborhood</h3>
-              <span>Nearest in strategic feature space</span>
+              <h3>Related games</h3>
+              <span>Distance in the selected representation</span>
             </div>
             <div id="neighbors" class="neighbors"></div>
             <p class="subtle">
@@ -182,7 +217,7 @@
         </section>
         <aside class="detail-panel" aria-label="Selected game">
           <div class="detail-top">
-            <span class="section-label">UNDER THE MICROSCOPE</span
+            <span class="section-label">GAME VIEWER</span
             ><span id="game-number">—</span>
           </div>
           <div class="player-match">
@@ -242,17 +277,19 @@
           </p>
         </aside>
       </div>
-      <section class="results-panel" aria-labelledby="results-title">
+      <section
+        class="results-panel"
+        id="research"
+        aria-labelledby="results-title"
+      >
         <div class="results-heading">
           <div>
-            <div class="eyebrow">EXPERIMENT NOTEBOOK · JUBAIL HPC</div>
-            <h2 id="results-title">What do the representations capture?</h2>
+            <div class="eyebrow">02 / RESEARCH NOTES</div>
+            <h2 id="results-title">What the experiments show</h2>
           </div>
           <a href="experiments.json" download>Download measured results ↓</a>
         </div>
-        <p id="results-summary">
-          The experiment report will appear when the Jubail runs complete.
-        </p>
+        <p id="results-summary">Loading the measured results…</p>
         <div id="experiment-facts" class="experiment-facts"></div>
         <div class="results-table-wrap">
           <table class="results-table">
@@ -279,9 +316,10 @@
       </section>
       <footer class="page-footer">
         <span
-          >GAME ATLAS <span class="dot-separator">·</span> Built for the curious
-          chess mind.</span
-        ><span id="dataset-note">A reproducible, open-source experiment.</span>
+          >Game Atlas <span class="dot-separator">/</span> Aadil
+          Chasmawala</span
+        ><span id="dataset-note">Open-source chess research</span
+        ><a href="assets/pieces/ATTRIBUTION.md">Piece artwork credits</a>
       </footer>
       <div
         id="announcement"
@@ -294,8 +332,8 @@
       <button id="close-about" class="close" aria-label="Close explanation">
         ×
       </button>
-      <div class="eyebrow">THE MAP IS NOT THE TERRITORY</div>
-      <h2>A way to explore.<br />Not a verdict on style.</h2>
+      <div class="eyebrow">METHODS & LIMITATIONS</div>
+      <h2>How to read Game Atlas</h2>
       <p>
         The strategic map describes the
         <strong>target player’s positions and decisions</strong>, starting after

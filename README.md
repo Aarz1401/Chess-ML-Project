@@ -1,5 +1,8 @@
 # Game Atlas
 
+[Explore the atlas](https://aarz1401.github.io/Chess-ML-Project/) ·
+[Find related positions](https://aarz1401.github.io/Chess-ML-Project/moments.html)
+
 An interactive chess-game atlas with reproducible representation-learning
 experiments. Explore real games, replay their moves, and compare engineered,
 pretrained, and learned game fingerprints.

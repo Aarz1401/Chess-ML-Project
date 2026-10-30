@@ -46,6 +46,10 @@ measurements; it does not change source-data or model licensing.
 
 Other dependencies retain their own licenses.
 
+Chessnut SVG piece artwork by Alexis Luengas is distributed unmodified under
+Apache License 2.0, with its license and pinned source attribution in
+website/dist/assets/pieces/.
+
 Stockfish annotations use the official Stockfish 17.1 release, under GPL-3.0:
 https://github.com/official-stockfish/Stockfish/releases/tag/sf_17.1
 Neither its executable nor source is bundled into the static website.

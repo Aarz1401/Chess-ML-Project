@@ -12,7 +12,7 @@ const dataset = JSON.parse(fs.readFileSync(path.join(directory, "atlas.json")));
 const dom = new JSDOM(
   fs.readFileSync(path.join(directory, "index.html"), "utf8"),
   {
-    url: "http://atlas.test/",
+    url: "http://atlas.test/Chess-ML-Project/",
     runScripts: "outside-only",
   },
 );
@@ -22,7 +22,10 @@ window.console.error = (...args) => errors.push(args.map(String).join(" "));
 window.fetch = async (name) => {
   const file = path.join(
     directory,
-    new URL(String(name), "http://atlas.test/").pathname.slice(1),
+    new URL(
+      String(name),
+      "http://atlas.test/Chess-ML-Project/",
+    ).pathname.replace(/^\/Chess-ML-Project\//, ""),
   );
   return {
     ok: fs.existsSync(file),
@@ -57,6 +60,15 @@ const $ = (id) => window.document.getElementById(id);
     dataset.games.length,
   );
   assert.equal(window.document.querySelectorAll("#board .square").length, 64);
+  assert.equal($("representation").value, "strategic");
+  assert.equal(
+    window.document.querySelectorAll("#board img.chess-piece").length,
+    32,
+  );
+  assert.match(
+    window.document.querySelector('#board img[src$="wK.svg"]').src,
+    /\/Chess-ML-Project\/assets\/pieces\/wK\.svg$/,
+  );
   $("next").click();
   assert.equal($("move-slider").value, "1");
   assert.match($("board").getAttribute("aria-label"), /after 1 plies/);

@@ -83,8 +83,8 @@ and method diagnostics, reducing accidental exposure before judging.
 
 No independent human judgments are included in this release. Test fixtures are
 synthetic and never enter the published result files. A prepared evaluation is
-not a completed relevance benchmark. The current Site's audience is preserved;
-collect judgments in an authorized shared deployment or a local session.
+not a completed relevance benchmark. The GitHub Pages site includes a review-only
+view. Reviewers retain their responses locally until they explicitly export them.
 
 The scoring command validates dataset versions, choices and trial partitions,
 deduplicates repeated exports by anonymous browser ID and trial, and keeps the

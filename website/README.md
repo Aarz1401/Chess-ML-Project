@@ -1,5 +1,7 @@
 # Game Atlas website
 
+Live: <https://aarz1401.github.io/Chess-ML-Project/>
+
 A static explorer of 1,000 real games with five representation modes, lazy board
 replays, different-ECO neighbors, feature overlays, and measured Jubail results.
 
@@ -40,7 +42,8 @@ the implementation session.
 - Learned temporal: 128D, small game encoder with paired-view/concept objectives.
 - Player-supervised control: 128D, explicitly trained for player identity.
 
-The default joint model was selected by validation loss among three seeds.
+The default view is the transparent strategic fingerprint. The temporal mode
+uses a joint model selected by validation loss among three seeds.
 Player retrieval has not demonstrated a reliable gain over the strategic
 baseline. See [all measured results](../docs/atlas-results-2026-10-28.md), including
 the paired confidence interval and metadata-confound check.
@@ -92,9 +95,16 @@ separate output path when comparing it with the neural export.
 
 ## Hosting and licensing
 
-dist/ works on a static web host. URL fragments identify selected games.
-.openai/hosting.json records the existing private Sites preview identity;
-self-hosters should create their own hosting configuration.
+GitHub Pages publishes only `website/dist/` through `.github/workflows/pages.yml`.
+Every website change on `main` runs JavaScript checks, both interaction suites,
+and static-link checks before deployment. Pull requests run the same checks
+without deploying. Asset paths are relative so they work under the repository's
+project URL. URL fragments identify selected games and positions.
+
+To self-host, serve `dist/` as ordinary static files. No ChatGPT or Sites service
+is needed. The old Sites manifest has been removed. Browser judgments are stored
+per origin; exports from an older deployment remain portable JSON files for the
+offline scoring script.
 
 The newly added website software is MIT licensed; see LICENSE. That license
 excludes PGN-derived data (including moment exports and replay chunks),
@@ -102,4 +112,5 @@ third-party fonts, pretrained models and pre-existing repository code. Original 
 redistribution terms are not documented; see DATA.md. Maia-3 is a separately
 licensed upstream dependency with pinned source and checkpoint revisions.
 
-Google Fonts is an optional external font request; system fonts are the fallback.
+Typography uses system fonts. Chessnut SVG pieces are served locally, with their
+Apache 2.0 license and attribution in `dist/assets/pieces/`.

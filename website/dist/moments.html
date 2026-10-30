@@ -7,33 +7,49 @@
       name="description"
       content="Compare chess positions, inspect shared patterns, and help evaluate game recommendations."
     />
-    <title>Find a moment — Game Atlas</title>
+    <title>Position finder — Game Atlas</title>
+    <link
+      rel="canonical"
+      href="https://aarz1401.github.io/Chess-ML-Project/moments.html"
+    />
+    <meta name="theme-color" content="#f7f6f2" />
+    <link rel="icon" href="assets/atlas-mark.svg" type="image/svg+xml" />
     <link rel="stylesheet" href="styles.css" />
     <link rel="stylesheet" href="moments.css" />
     <script defer src="moments.js"></script>
   </head>
   <body class="moments-page">
-    <header class="moment-header">
-      <a class="brand" href="index.html"
-        ><span class="brand-mark">♞</span
-        ><span
-          >game atlas<span class="brand-sub">A FIELD GUIDE TO CHESS</span></span
-        ></a
+    <a class="skip-link" href="#position-workspace">Skip to positions</a>
+    <header class="site-header">
+      <a class="brand" href="index.html" aria-label="Game Atlas home"
+        ><img
+          class="brand-mark"
+          src="assets/atlas-mark.svg"
+          width="30"
+          height="30"
+          alt=""
+        /><span>Game Atlas</span></a
       >
-      <nav aria-label="Main navigation">
-        <a href="index.html">Game map ↗</a
-        ><a href="#review">Blind comparison ↓</a
-        ><a href="#evidence">Evidence ↓</a>
+      <nav class="site-nav" aria-label="Main navigation">
+        <a href="index.html">Game atlas</a
+        ><a href="moments.html" aria-current="page">Position finder</a
+        ><a href="#evidence">Research</a>
       </nav>
+      <a
+        class="source-link"
+        href="https://github.com/Aarz1401/Chess-ML-Project"
+        target="_blank"
+        rel="noreferrer"
+        >GitHub <span aria-hidden="true">↗</span></a
+      >
     </header>
     <main class="moment-main">
       <section class="moment-intro">
-        <div class="eyebrow">DIFFERENT GAMES. FAMILIAR POSITIONS.</div>
-        <h1>Find a moment<br />you can learn from.</h1>
+        <div class="eyebrow">02 / POSITION FINDER</div>
+        <h1>Study a position in context.</h1>
         <p>
-          A game’s average can hide its most useful moments. Compare specific
-          positions, see what they share, and follow what actually happened
-          next.
+          Find related positions from other games. Compare their structure and
+          follow the moves that came next.
         </p>
         <p id="moment-status" role="status" aria-live="polite">
           Loading the position collection…
@@ -60,9 +76,9 @@
           Another moment ↗
         </button>
       </section>
-      <div class="moment-workspace">
+      <div class="moment-workspace" id="position-workspace" tabindex="-1">
         <section class="moment-card" aria-labelledby="source-heading">
-          <div class="eyebrow">01 / YOUR STARTING POINT</div>
+          <div class="eyebrow">SOURCE</div>
           <h2 id="source-heading">Source position</h2>
           <p id="source-meta" class="moment-meta"></p>
           <div
@@ -81,8 +97,8 @@
           <a id="source-game-link" href="index.html">Replay full game ↗</a>
         </section>
         <section class="moment-card" aria-labelledby="match-heading">
-          <div class="eyebrow">02 / A RELATED MOMENT</div>
-          <h2 id="match-heading">Recommended position</h2>
+          <div class="eyebrow">REFERENCE</div>
+          <h2 id="match-heading">Related position</h2>
           <p id="match-meta" class="moment-meta"></p>
           <div
             id="match-board"
@@ -100,8 +116,8 @@
           <a id="match-game-link" href="index.html">Replay full game ↗</a>
         </section>
         <aside class="moment-card match-explanation">
-          <div class="eyebrow">03 / LOOK CLOSER</div>
-          <h2>What connects them?</h2>
+          <div class="eyebrow">COMPARISON</div>
+          <h2>Position patterns</h2>
           <p class="moment-meta">
             Facts below describe the two starting positions. They are
             comparisons, not explanations of the neural model’s reasoning.
@@ -121,7 +137,7 @@
         class="moment-section"
         aria-labelledby="review-heading"
       >
-        <div class="eyebrow">HELP TEST THE IDEA</div>
+        <div class="eyebrow">03 / BLINDED REVIEW</div>
         <h2 id="review-heading">Which position is more relevant?</h2>
         <p>
           <a href="moments.html?review=1#review">Open a review-only view ↗</a>
@@ -215,8 +231,8 @@
         class="moment-section"
         aria-labelledby="evidence-heading"
       >
-        <div class="eyebrow">THE FINAL FOCUSED ROUND</div>
-        <h2 id="evidence-heading">Evidence before a bigger model.</h2>
+        <div class="eyebrow">RESEARCH / POSITION RETRIEVAL</div>
+        <h2 id="evidence-heading">Position retrieval results</h2>
         <div id="moment-facts" class="experiment-facts"></div>
         <p id="moment-evidence">Loading the measured position diagnostics…</p>
         <div class="results-table-wrap">
@@ -279,7 +295,8 @@
         </p>
       </section>
       <footer class="moment-footer">
-        GAME ATLAS · Inspect the match. Follow the game. Question the metric.
+        Game Atlas / Aadil Chasmawala ·
+        <a href="assets/pieces/ATTRIBUTION.md">Piece artwork credits</a>
       </footer>
     </main>
   </body>
